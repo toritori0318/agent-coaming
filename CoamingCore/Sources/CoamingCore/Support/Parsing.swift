@@ -16,6 +16,25 @@ public func formatUsedPercent(_ fraction: Double) -> String {
     return "\(Int(percent))%"
 }
 
+/// Clock time for when a limit window resets. Same calendar day is the time only.
+/// A later day includes the month and day. Japanese is 24-hour. English is 12-hour.
+public func formatResetClock(_ date: Date, now: Date, locale: Locale, calendar: Calendar = .current) -> String {
+    let formatter = DateFormatter()
+    formatter.calendar = calendar
+    formatter.locale = locale
+    formatter.timeZone = calendar.timeZone
+    formatter.amSymbol = "AM"
+    formatter.pmSymbol = "PM"
+    let sameDay = calendar.isDate(date, inSameDayAs: now)
+    let japanese = locale.identifier.hasPrefix("ja")
+    if japanese {
+        formatter.dateFormat = sameDay ? "H:mm" : "M/d H:mm"
+    } else {
+        formatter.dateFormat = sameDay ? "h:mm a" : "M/d h:mm a"
+    }
+    return formatter.string(from: date)
+}
+
 public func formatAge(since date: Date, now: Date) -> String {
     let seconds = max(0, Int(now.timeIntervalSince(date)))
     if seconds < 60 { return "\(seconds)s ago" }

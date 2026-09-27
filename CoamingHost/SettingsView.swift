@@ -336,6 +336,10 @@ private struct UsageStatusBars: View {
             Text(valueText(window))
                 .font(.caption.monospacedDigit())
                 .frame(width: 48, alignment: .trailing)
+            Text(resetText(window))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 108, alignment: .trailing)
         }
     }
 
@@ -361,5 +365,11 @@ private struct UsageStatusBars: View {
         guard let window else { return "—" }
         if window.label == "∞" { return "∞" }
         return formatUsedPercent(window.usedFraction)
+    }
+
+    private func resetText(_ window: UsageWindow?) -> String {
+        guard let resets = window?.resetsAt else { return "—" }
+        let identifier = language == .ja ? "ja_JP" : "en_US"
+        return formatResetClock(resets, now: Date(), locale: Locale(identifier: identifier))
     }
 }
