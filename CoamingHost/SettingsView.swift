@@ -217,13 +217,13 @@ private struct UsageGuide: View {
     private var readsText: String {
         #if COAMING_CURSOR
         language.pick(
-            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。auth.json は読みません。Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb（読み取り専用）、無ければ Keychain の cursor-access-token。すべて読むだけで、更新も書き換えもしません。",
-            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. auth.json is not read. Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb (read-only), or the Keychain item cursor-access-token. Everything is read only, never refreshed or rewritten."
+            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。このアプリは auth.json を読みません。問い合わせる CLI が自分のログインファイルを更新することがあります。Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb（読み取り専用）、無ければ Keychain の cursor-access-token。",
+            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. This app does not read auth.json. The CLI may update its own login file. Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb (read-only), or the Keychain item cursor-access-token."
         )
         #else
         language.pick(
-            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。auth.json は読みません。どちらも読むだけで、更新も書き換えもしません。",
-            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. auth.json is not read. Both are read only, never refreshed or rewritten."
+            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。このアプリは auth.json を読みません。問い合わせる CLI が自分のログインファイルを更新することがあります。",
+            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. This app does not read auth.json. The CLI may update its own login file."
         )
         #endif
     }
@@ -231,13 +231,13 @@ private struct UsageGuide: View {
     private var networkText: String {
         #if COAMING_CURSOR
         language.pick(
-            ja: "cursor.com（Cursor の使用量）だけです。Claude と Codex 向けには通信しません。",
-            en: "Only cursor.com (Cursor usage). Nothing is sent for Claude or Codex."
+            ja: "このアプリが直接通信するのは cursor.com（Cursor の使用量）だけです。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。",
+            en: "The only host this app calls is cursor.com, for Cursor usage. The codex CLI asks chatgpt.com for Codex usage."
         )
         #else
         language.pick(
-            ja: "通信しません。Claude は手元のファイル、Codex は手元の codex コマンドです。",
-            en: "This build does not use the network. Claude comes from local files. Codex asks the local codex command."
+            ja: "このアプリ自身は通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。",
+            en: "This app does not send requests. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file."
         )
         #endif
     }

@@ -1,3 +1,5 @@
+#if COAMING_CURSOR
+// Cursor session lookup. The default build does not read the Keychain. See ProviderID.included.
 import Foundation
 import Security
 
@@ -29,3 +31,4 @@ struct KeychainClient: Sendable {
         }
     }
 }
+#endif

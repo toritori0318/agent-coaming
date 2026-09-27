@@ -55,10 +55,10 @@ final class RefresherTests: XCTestCase {
         let http = MockHTTP()
         http.status = 429
         let store = MemoryBackoffStore()
-        let refresher = Refresher(providers: [idleClaude(), metered(http), idleCursor(http)], previous: nil, backoff: store)
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: store)
 
         _ = await refresher.refresh(at: start, force: false)
-        var state = await refresher.backoffState(.codex)
+        var state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, start.addingTimeInterval(Constants.retryAfterDefault))
         XCTAssertEqual(http.count, 1)
 
@@ -67,22 +67,22 @@ final class RefresherTests: XCTestCase {
 
         let second = start.addingTimeInterval(Constants.retryAfterDefault + 1)
         _ = await refresher.refresh(at: second, force: false)
-        state = await refresher.backoffState(.codex)
+        state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, second.addingTimeInterval(Constants.retryAfterConsecutive))
         XCTAssertEqual(http.count, 2)
 
         let third = second.addingTimeInterval(Constants.retryAfterConsecutive + 1)
         _ = await refresher.refresh(at: third, force: false)
-        state = await refresher.backoffState(.codex)
+        state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, third.addingTimeInterval(Constants.retryAfterConsecutive))
 
         http.status = 200
         let fourth = third.addingTimeInterval(Constants.retryAfterConsecutive + 1)
         let snapshot = await refresher.refresh(at: fourth, force: false)
-        state = await refresher.backoffState(.codex)
+        state = await refresher.backoffState(.cursor)
         XCTAssertNil(state.blockedUntil)
         XCTAssertEqual(state.consecutive429, 0)
-        XCTAssertEqual(snapshot.provider(.codex)?.status, .ok)
+        XCTAssertEqual(snapshot.provider(.cursor)?.status, .ok)
         XCTAssertEqual(Constants.pollInterval, 300)
     }
 
@@ -119,9 +119,9 @@ final class RefresherTests: XCTestCase {
         let http = MockHTTP()
         http.status = 429
         http.headers = ["Retry-After": "7200"]
-        let refresher = Refresher(providers: [idleClaude(), metered(http), idleCursor(http)], previous: nil, backoff: MemoryBackoffStore())
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: MemoryBackoffStore())
         _ = await refresher.refresh(at: now, force: false)
-        let state = await refresher.backoffState(.codex)
+        let state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, now.addingTimeInterval(Constants.retryAfterMax))
     }
 
@@ -139,11 +139,25 @@ final class RefresherTests: XCTestCase {
         XCTAssertEqual(snapshot.provider(.codex)?.staleReason, "sign in with ChatGPT in Codex")
     }
 
+    func testCodexRateLimitMessageBacksOff() async {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let provider = CodexProvider(
+            locate: { URL(fileURLWithPath: "/usr/bin/codex") },
+            ask: { _, _ in CodexUsageParser.reply(forRPCMessage: "rate limit exceeded") }
+        )
+        let refresher = Refresher(providers: [idleClaude(), provider], previous: nil, backoff: MemoryBackoffStore())
+        _ = await refresher.refresh(at: now, force: false)
+        let state = await refresher.backoffState(.codex)
+        XCTAssertEqual(state.blockedUntil, now.addingTimeInterval(Constants.retryAfterDefault))
+        let snapshot = await refresher.refresh(at: now.addingTimeInterval(10), force: false)
+        XCTAssertEqual(snapshot.provider(.codex)?.status, .stale)
+    }
+
     func testManualRefreshRespectsRecentAttempt() async {
         let now = Date(timeIntervalSince1970: 1_900_000_000)
         let http = MockHTTP()
         http.status = 429
-        let refresher = Refresher(providers: [idleClaude(), metered(http), idleCursor(http)], previous: nil, backoff: MemoryBackoffStore())
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: MemoryBackoffStore())
         _ = await refresher.refresh(at: now, force: false)
         XCTAssertEqual(http.count, 1)
         _ = await refresher.refresh(at: now.addingTimeInterval(10), force: true)
@@ -157,19 +171,19 @@ final class RefresherTests: XCTestCase {
         let now = Date(timeIntervalSince1970: 1_900_000_000)
         let http = MockHTTP()
         let store = MemoryBackoffStore()
-        store.save(.codex, BackoffState(blockedUntil: nil, consecutive429: 0, lastAttemptAt: now.addingTimeInterval(-10)))
-        let refresher = Refresher(providers: [idleClaude(), metered(http), idleCursor(http)], previous: nil, backoff: store)
+        store.save(.cursor, BackoffState(blockedUntil: nil, consecutive429: 0, lastAttemptAt: now.addingTimeInterval(-10)))
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: store)
         let snapshot = await refresher.refresh(at: now, force: true)
         XCTAssertEqual(http.count, 1)
-        XCTAssertEqual(snapshot.provider(.codex)?.status, .ok)
+        XCTAssertEqual(snapshot.provider(.cursor)?.status, .ok)
     }
 
     func testFreshProcessStillRespectsRateLimitBlock() async {
         let now = Date(timeIntervalSince1970: 1_900_000_000)
         let http = MockHTTP()
         let store = MemoryBackoffStore()
-        store.save(.codex, BackoffState(blockedUntil: now.addingTimeInterval(600), consecutive429: 1, lastAttemptAt: now.addingTimeInterval(-120)))
-        let refresher = Refresher(providers: [idleClaude(), metered(http), idleCursor(http)], previous: nil, backoff: store)
+        store.save(.cursor, BackoffState(blockedUntil: now.addingTimeInterval(600), consecutive429: 1, lastAttemptAt: now.addingTimeInterval(-120)))
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: store)
         _ = await refresher.refresh(at: now, force: true)
         XCTAssertEqual(http.count, 0)
     }
@@ -245,8 +259,10 @@ private final class CountingProvider: UsageProvider, @unchecked Sendable {
     }
 }
 
+/// HTTP 429 backoff for the optional Cursor client. Codex does not use this client.
+/// Codex throttling is `testCodexRateLimitMessageBacksOff`.
 private struct MeteredProvider: UsageProvider {
-    var id: ProviderID { .codex }
+    var id: ProviderID { .cursor }
     var http: MockHTTP
 
     func fetch(now: Date) async -> ProviderAttempt {
@@ -255,11 +271,11 @@ private struct MeteredProvider: UsageProvider {
             let (_, response) = try await http.send(request)
             try UsageHTTP.reject(response, data: Data(), provider: "cursor", now: now)
             let window = UsageWindow(kind: .fiveHour, label: "5h", usedFraction: 0.04, resetsAt: nil)
-            return .ok(.codex, plan: "Codex plus", windows: [window], at: now)
+            return .ok(.cursor, plan: "Pro", windows: [window], at: now)
         } catch let error as UsageFetchError {
-            return .from(error: error, id: .codex, plan: nil)
+            return .from(error: error, id: .cursor, plan: nil)
         } catch {
-            return .from(error: .offline, id: .codex, plan: nil)
+            return .from(error: .offline, id: .cursor, plan: nil)
         }
     }
 }

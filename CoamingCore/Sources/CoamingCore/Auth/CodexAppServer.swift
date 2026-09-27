@@ -1,6 +1,6 @@
 import Foundation
 
-// Do not read auth.json or refresh_token. The Codex CLI keeps both and answers account/rateLimits/read.
+// Do not read auth.json or refresh_token. The Codex CLI keeps both, asks chatgpt.com, and may refresh its own login file.
 
 enum CodexServerReply: Sendable {
     case usage(ParsedUsage)
@@ -263,6 +263,8 @@ enum CodexUsageParser {
         return ParsedUsage(windows: windows, planLabel: plan)
     }
 
+    /// Auth is classified first. Those messages say "read rate limits" and are not a throttle.
+    /// The CLI reports a 429 as "429" or "rate limit exceeded".
     static func reply(forRPCMessage message: String) -> CodexServerReply {
         let folded = message.lowercased()
         if folded.contains("chatgpt authentication required") {
@@ -270,6 +272,9 @@ enum CodexUsageParser {
         }
         if folded.contains("authentication required") {
             return .needsLogin("sign in with ChatGPT in Codex")
+        }
+        if folded.contains("429") || folded.contains("rate limit exceeded") {
+            return .failed(.http(status: 429, retryAfter: nil))
         }
         return .failed(.semantic("codex app-server failed"))
     }

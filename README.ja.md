@@ -6,8 +6,8 @@ macOS のデスクトップウィジェットに、Claude Code / Codex CLI の�
 
 ![端のインジケータ。Claude と Codex は 5h と 1w。Cursor の列は COAMING_CURSOR ビルドだけ。](docs/indicator.jpg)
 
-- ログイン情報は**読むだけ**。書き換え・複製・トークン更新はしません
-- 既定のビルドは通信しません。Claude は手元のファイル、Codex は手元の `codex` コマンドです
+- このアプリはログイン情報を読むだけで、書き換え・複製・トークン更新はしません。Codex CLI が自分のログインファイルを更新することはあります
+- このアプリ自身は、既定のビルドでは通信しません。Claude は手元のファイルです。Codex の使用量は、手元の `codex` コマンドが chatgpt.com に問い合わせます
 - 個人利用向け。App Store 配布や公証はしていません
 
 ## 仕組み
@@ -15,7 +15,7 @@ macOS のデスクトップウィジェットに、Claude Code / Codex CLI の�
 | サービス | 使用量の取り方 |
 |---|---|
 | Claude | 2 つのローカルファイルの新しい方を読む。(1) Claude Desktop が 15 分ごとに書く `plan-usage-history.json`（使用率のみ）、(2) Claude Code が statusline に渡す `rate_limits` を同梱スクリプトが書いたファイル（リセット時刻つき）。OAuth トークンには触らない |
-| Codex CLI | インストール済みの `codex` コマンド（`codex app-server`）に `account/rateLimits/read` を聞く。ログインは CLI が持つ。このアプリは `auth.json` を読まない |
+| Codex CLI | インストール済みの `codex` コマンド（`codex app-server`）に `account/rateLimits/read` を聞く。問い合わせるのは CLI で、CLI が chatgpt.com にアクセスし、自分のログインファイルを更新することがあります。このアプリは `auth.json` を読みません |
 | Cursor | 既定のビルドには入らない。`COAMING_CURSOR=1` で、読み取り専用の `state.vscdb`（または Keychain のトークン）と `cursor.com` への通信をコンパイルする |
 
 Claude の OAuth トークンは Anthropic が Claude Code とネイティブアプリ専用としているため、このアプリでは使いません。代わりに Claude Desktop / Claude Code が手元に残す値を読みます。

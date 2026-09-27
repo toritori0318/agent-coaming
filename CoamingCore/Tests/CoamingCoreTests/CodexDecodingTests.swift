@@ -47,6 +47,18 @@ final class CodexDecodingTests: XCTestCase {
         XCTAssertEqual(message, "codex app-server failed")
     }
 
+    func testRateLimitReplyIsHTTP429() {
+        guard case .failed(.http(let status, let retryAfter)) = CodexUsageParser.reply(forRPCMessage: "rate limit exceeded: try again later") else {
+            return XCTFail("expected http 429")
+        }
+        XCTAssertEqual(status, 429)
+        XCTAssertNil(retryAfter)
+        guard case .failed(.http(let coded, _)) = CodexUsageParser.reply(forRPCMessage: "upstream returned http_429") else {
+            return XCTFail("expected http 429")
+        }
+        XCTAssertEqual(coded, 429)
+    }
+
     func testPathCandidateAndVendorBinary() throws {
         let directory = try temporaryDirectory()
         let binary = directory.appendingPathComponent("codex")

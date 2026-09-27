@@ -6,8 +6,8 @@ A macOS app that shows only the usage of Claude Code and Codex CLI: how much of 
 
 ![Corner indicator. Claude and Codex show 5h and 1w. The Cursor column appears only in a COAMING_CURSOR build.](docs/indicator.jpg)
 
-- Login material is **read-only**. Nothing is rewritten, copied, or refreshed
-- The default build does not use the network. Claude is read from local files. Codex is asked of the local `codex` command
+- This app reads login material and does not rewrite it, copy it, or refresh tokens. The Codex CLI may update its own login file
+- This app does not open a connection in the default build. Claude usage comes from local files. Codex usage comes from the local `codex` command, which asks chatgpt.com
 - For personal use. Not distributed on the App Store and not notarized
 
 ## How it reads usage
@@ -15,7 +15,7 @@ A macOS app that shows only the usage of Claude Code and Codex CLI: how much of 
 | Service | Source |
 |---|---|
 | Claude | The newer of two local files. (1) `plan-usage-history.json`, written by Claude Desktop about every 15 minutes (used percent only). (2) A file written by the bundled script from the `rate_limits` Claude Code passes to its status line (includes reset times). OAuth tokens are not touched |
-| Codex CLI | Asks the installed `codex` command (`codex app-server`) for `account/rateLimits/read`. The CLI keeps the login. This app does not read `auth.json` |
+| Codex CLI | Asks the installed `codex` command (`codex app-server`) for `account/rateLimits/read`. The CLI asks chatgpt.com and may refresh its own login file. This app does not read `auth.json` |
 | Cursor | Not in the default build. `COAMING_CURSOR=1` compiles in a read-only `state.vscdb` (or the Keychain token) and a call to `cursor.com` |
 
 This app does not use Claude's OAuth token. Anthropic reserves that token for Claude Code and its native apps. The app reads the values Claude Desktop and Claude Code already keep locally.
