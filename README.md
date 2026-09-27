@@ -2,9 +2,9 @@
 
 [日本語](README.ja.md)
 
-A macOS app that shows only the usage of Claude Code and Codex CLI: how much of the limit is used, and when it resets. Cursor can be compiled in separately.
+A macOS app that shows how much of the Claude Code and Codex CLI limits is used, and when they reset. Cursor is not in the default build. It is optional, and only a build with `COAMING_CURSOR=1` includes it.
 
-![Corner indicator. Claude and Codex show 5h and 1w. The Cursor column appears only in a COAMING_CURSOR build.](docs/indicator.jpg)
+![Corner indicator in the default build. Claude and Codex show 5h and 1w. Cursor is not included.](docs/indicator.jpg)
 
 - This app reads login material and does not rewrite it, copy it, or refresh tokens. The Codex CLI may update its own login file
 - This app does not open a connection in the default build. Claude usage comes from local files. Codex usage comes from the local `codex` command, which asks chatgpt.com
@@ -20,7 +20,7 @@ A macOS app that shows only the usage of Claude Code and Codex CLI: how much of 
 
 This app does not use Claude's OAuth token. Anthropic reserves that token for Claude Code and its native apps. The app reads the values Claude Desktop and Claude Code already keep locally.
 
-Cursor does not publish a personal usage API. Reading the local session and polling `cursor.com` sits closest to Cursor's rules against automated access, so the default build leaves Cursor out. `COAMING_CURSOR=1` compiles that path in. Building it is your own decision. The picture above includes that optional column.
+Cursor does not publish a personal usage API. Reading the local session and polling `cursor.com` sits closest to Cursor's rules against automated access, so the default build leaves Cursor out. `COAMING_CURSOR=1` compiles that path in. Building it is your own decision. The picture above is the default build, with Claude and Codex only.
 
 - **If Claude Desktop (including Cowork) is running, the 5-hour and 7-day percents appear with no extra setup** (updated about every 15 minutes; no reset time)
 - Setting the Claude Code status line adds reset times while a session is running

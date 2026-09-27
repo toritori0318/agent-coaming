@@ -2,9 +2,9 @@
 
 [English](README.md)
 
-macOS のデスクトップウィジェットに、Claude Code / Codex CLI の使用量（使った割合とリセット時刻）だけを出すアプリです。Cursor は別にコンパイルできます。
+macOS のデスクトップウィジェットに、Claude Code と Codex CLI の使用量（使った割合とリセット時刻）を出すアプリです。Cursor は既定のビルドには入っていません。任意で、`COAMING_CURSOR=1` を付けて自分でビルドしたときだけ入ります。
 
-![端のインジケータ。Claude と Codex は 5h と 1w。Cursor の列は COAMING_CURSOR ビルドだけ。](docs/indicator.jpg)
+![既定ビルドの端のインジケータ。Claude と Codex は 5h と 1w。Cursor は入っていません。](docs/indicator.jpg)
 
 - このアプリはログイン情報を読むだけで、書き換え・複製・トークン更新はしません。Codex CLI が自分のログインファイルを更新することはあります
 - このアプリ自身は、既定のビルドでは通信しません。Claude は手元のファイルです。Codex の使用量は、手元の `codex` コマンドが chatgpt.com に問い合わせます
@@ -20,7 +20,7 @@ macOS のデスクトップウィジェットに、Claude Code / Codex CLI の�
 
 Claude の OAuth トークンは Anthropic が Claude Code とネイティブアプリ専用としているため、このアプリでは使いません。代わりに Claude Desktop / Claude Code が手元に残す値を読みます。
 
-Cursor には個人向けの使用量 API がありません。手元のログイン情報を読んで `cursor.com` に問い合わせる形は、自動アクセスを禁じる Cursor の規約にいちばん近いので、既定のビルドからは外しています。`COAMING_CURSOR=1` でその経路をコンパイルできます。入れるかどうかはビルドする人の判断です。上の画像には、その任意の列が含まれています。
+Cursor には個人向けの使用量 API がありません。手元のログイン情報を読んで `cursor.com` に問い合わせる形は、自動アクセスを禁じる Cursor の規約にいちばん近いので、既定のビルドからは外しています。`COAMING_CURSOR=1` でその経路をコンパイルできます。入れるかどうかはビルドする人の判断です。上の画像は既定のビルドで、Claude と Codex だけです。
 
 - **Claude Desktop（Cowork 含む）を起動していれば、設定なしで 5 時間 / 7 日の使用率が出ます**（15 分ごとに更新。リセット時刻は出ません）
 - Claude Code の statusline を設定すると、セッション中はリセット時刻つきで更新されます
