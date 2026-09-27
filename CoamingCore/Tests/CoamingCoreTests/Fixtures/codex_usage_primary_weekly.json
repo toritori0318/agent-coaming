@@ -1,8 +1,14 @@
 {
-  "plan_type": "plus",
-  "rate_limit": {
-    "primary_window": { "used_percent": 19, "limit_window_seconds": 604800, "reset_after_seconds": 546240 },
-    "secondary_window": { "used_percent": 4, "limit_window_seconds": 18000, "reset_after_seconds": 4140, "reset_at": 1759000000 }
+  "accountId": "do-not-keep",
+  "rateLimits": {
+    "planType": "other",
+    "primary": { "usedPercent": 99, "windowDurationMins": 300, "resetsAt": 1 }
   },
-  "additional_rate_limits": [{ "used_percent": 99 }]
+  "rateLimitsByLimitId": {
+    "codex": {
+      "planType": "plus",
+      "primary": { "usedPercent": 4, "windowDurationMins": 300, "resetsAt": 1700004140 },
+      "secondary": { "usedPercent": 19, "windowDurationMins": 10080, "resetsAt": 1700546240 }
+    }
+  }
 }

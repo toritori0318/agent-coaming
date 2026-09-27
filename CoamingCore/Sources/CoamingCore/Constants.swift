@@ -27,9 +27,15 @@ public enum Constants {
     public static let credentialReadByteLimit = 1_048_576
     /// Desktop appends plan-usage-history.json about every 15 minutes, roughly 95KB a month. A partial read is not valid JSON.
     public static let desktopHistoryReadByteLimit = 16 * 1_048_576
-    public static let cursorKeychainService = "cursor-access-token"
     public static let appGroupName = "group.agentcoaming"
-    public static let allowedHosts: Set<String> = ["chatgpt.com", "cursor.com"]
+    // The default build has no network hosts. cursor.com exists only in a COAMING_CURSOR build. See ProviderID.included.
+    #if COAMING_CURSOR
+    public static let cursorKeychainService = "cursor-access-token"
+    public static let allowedHosts: Set<String> = ["cursor.com"]
+    public static let cursorUsageURL = URL(string: "https://cursor.com/api/usage-summary")!
+    #else
+    public static let allowedHosts: Set<String> = []
+    #endif
     /// Lower index is kept. When medium exceeds `mediumMaxRows`, drop from the end.
     /// weeklyModel rows below `weeklyModelMinFraction` are removed before consulting this list.
     public static let mediumRowPriority: [WindowKind] = [
@@ -39,9 +45,6 @@ public enum Constants {
         .weeklyModel,
         .billingOnDemand,
     ]
-
-    public static let codexUsageURL = URL(string: "https://chatgpt.com/backend-api/wham/usage")!
-    public static let cursorUsageURL = URL(string: "https://cursor.com/api/usage-summary")!
 
     public static func capitalize(_ value: String) -> String {
         guard let first = value.first else { return value }

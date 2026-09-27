@@ -28,32 +28,6 @@ final class JWTTests: XCTestCase {
 }
 
 final class CredentialReaderTests: XCTestCase {
-    func testCodexKeyStyles() throws {
-        let snake = try codexRead("codex_auth_snake")
-        guard case .found(let snakeCredential) = snake else { return XCTFail("\(snake)") }
-        XCTAssertEqual(snakeCredential.accountID, "acc_snake")
-        XCTAssertEqual(snakeCredential.expiresAt, Date(timeIntervalSince1970: 1_759_000_000))
-        XCTAssertFalse(String(reflecting: snakeCredential).contains("DO_NOT_KEEP_9f3a"))
-
-        let camel = try codexRead("codex_auth_camel")
-        guard case .found(let camelCredential) = camel else { return XCTFail("\(camel)") }
-        XCTAssertEqual(camelCredential.accountID, "acc_camel")
-
-        let api = try codexRead("codex_auth_apikey")
-        guard case .unsupported = api else { return XCTFail("\(api)") }
-    }
-
-    func testCodexInstalledDetection() throws {
-        let directory = try temporaryDirectory()
-        let missing = CodexCredentialReader(
-            authFileURL: directory.appendingPathComponent("auth.json"),
-            sessionsDirectoryURL: directory.appendingPathComponent("sessions")
-        )
-        guard case .notInstalled = missing.read() else { return XCTFail("expected not installed") }
-        try FileManager.default.createDirectory(at: directory.appendingPathComponent("sessions"), withIntermediateDirectories: true)
-        guard case .needsLogin = missing.read() else { return XCTFail("expected needs login") }
-    }
-
     func testCursorReadonlyBlobAndBusyAndWAL() throws {
         let plain = try temporaryDirectory()
         let plainDB = plain.appendingPathComponent("state.vscdb")
@@ -124,13 +98,6 @@ final class CredentialReaderTests: XCTestCase {
         XCTAssertFalse(CursorIdentity.isValidToken(token + "; Path=/"))
         XCTAssertFalse(CursorIdentity.isValidToken("a\r\nb"))
         XCTAssertFalse(CursorIdentity.isValidToken(""))
-    }
-
-    private func codexRead(_ name: String) throws -> CodexRead {
-        let directory = try temporaryDirectory()
-        let file = directory.appendingPathComponent("auth.json")
-        try Fixtures.data(name).write(to: file)
-        return CodexCredentialReader(authFileURL: file, sessionsDirectoryURL: directory.appendingPathComponent("sessions")).read()
     }
 }
 

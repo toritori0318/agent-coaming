@@ -16,7 +16,7 @@ final class AppModel {
     var refreshing = false
     var refreshSkipped = false
     var language: AppLanguage = .ja
-    var enabled: [ProviderID: Bool] = Dictionary(uniqueKeysWithValues: ProviderID.allCases.map { ($0, true) })
+    var enabled: [ProviderID: Bool] = Dictionary(uniqueKeysWithValues: ProviderID.included.map { ($0, true) })
 
     private var refresher: Refresher?
     private var store = SnapshotStore(fileURL: nil)
@@ -30,7 +30,7 @@ final class AppModel {
     func start() async {
         store = SnapshotStore.live()
         containerAvailable = store.fileURL != nil
-        if let previous = store.read() {
+        if let previous = store.read()?.keepingIncluded() {
             snapshot = previous
         }
         menuBar = defaults.bool(forKey: PreferenceKey.menuBarVisible)
@@ -39,7 +39,7 @@ final class AppModel {
         if let raw = defaults.string(forKey: PreferenceKey.language), let stored = AppLanguage(rawValue: raw) {
             language = stored
         }
-        for id in ProviderID.allCases {
+        for id in ProviderID.included {
             let key = PreferenceKey.providerEnabled(id)
             enabled[id] = defaults.object(forKey: key) == nil ? true : defaults.bool(forKey: key)
         }
@@ -47,7 +47,7 @@ final class AppModel {
         status.update(snapshot, enabled: enabledIDs)
         overlay.bind(self)
         overlay.setVisible(overlayVisible)
-        let previous = store.read()
+        let previous = store.read()?.keepingIncluded()
         refresher = await Task.detached {
             CoamingLive.makeRefresher(previous: previous)
         }.value
@@ -74,7 +74,7 @@ final class AppModel {
     }
 
     var enabledIDs: Set<ProviderID> {
-        Set(ProviderID.allCases.filter { isEnabled($0) })
+        Set(ProviderID.included.filter { isEnabled($0) })
     }
 
     func setEnabled(_ id: ProviderID, _ value: Bool) {

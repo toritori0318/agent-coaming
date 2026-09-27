@@ -29,7 +29,11 @@ public struct MediumWidgetRow: Sendable, Equatable, Identifiable {
 }
 
 public enum WidgetLayout {
+    #if COAMING_CURSOR
     public static let emptyMessage = "Sign in to Claude Code, Codex, or Cursor"
+    #else
+    public static let emptyMessage = "Sign in to Claude Code or Codex"
+    #endif
 
     public static func small(snapshot: Snapshot, now: Date) -> SmallWidgetModel {
         let visible = ordered(snapshot).filter { $0.status != .notInstalled }
@@ -152,7 +156,7 @@ public enum WidgetLayout {
     }
 
     private static func ordered(_ snapshot: Snapshot) -> [ProviderSnapshot] {
-        ProviderID.allCases.compactMap { id in snapshot.providers.first { $0.id == id } }
+        ProviderID.included.compactMap { id in snapshot.providers.first { $0.id == id } }
     }
 
     private static func statusText(_ provider: ProviderSnapshot) -> String? {

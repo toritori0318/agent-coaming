@@ -11,24 +11,29 @@ public enum CoamingLive {
     }
 
     static func makeProviders(paths: ToolPaths, userAgent: String, http: any HTTPClient) -> [any UsageProvider] {
-        let keychain = KeychainClient.live()
         let claude = ClaudeProvider(read: { claudeReader(paths).read() })
         let codex = CodexProvider(
-            userAgent: userAgent,
-            http: http,
-            read: {
-                CodexCredentialReader(authFileURL: paths.codexAuth, sessionsDirectoryURL: paths.codexSessions).read()
+            locate: {
+                CodexBinary.candidates(home: paths.home, environment: paths.environment).first.map { URL(fileURLWithPath: $0) }
+            },
+            ask: { executable, now in
+                await CodexAppServer.ask(executable: executable, now: now)
             }
         )
-        let cursor = CursorProvider(
+        var providers: [any UsageProvider] = [claude, codex]
+        // Optional Cursor path. The default build does not read Cursor or call cursor.com. See ProviderID.included.
+        #if COAMING_CURSOR
+        let keychain = KeychainClient.live()
+        providers.append(CursorProvider(
             userAgent: userAgent,
             http: http,
             supportDirectoryURL: paths.cursorSupport,
             read: {
                 CursorCredentialReader(databaseURL: paths.cursorDatabase, keychain: keychain).read()
             }
-        )
-        return [claude, codex, cursor]
+        ))
+        #endif
+        return providers
     }
 
     static func claudeReader(_ paths: ToolPaths) -> ClaudeRateLimitReader {
@@ -50,22 +55,41 @@ public struct CredentialReport: Sendable, Equatable {
 }
 
 public enum CredentialChecker {
-    public static func check(now: Date = Date()) -> [CredentialReport] {
+    public static func check(now: Date = Date()) async -> [CredentialReport] {
         let paths = ToolPaths.live()
-        let keychain = KeychainClient.live()
         let claude = CoamingLive.claudeReader(paths).read()
-        let codex = CodexCredentialReader(authFileURL: paths.codexAuth, sessionsDirectoryURL: paths.codexSessions).read()
+        let codex = await codexReport(paths: paths, now: now)
+        var reports = [
+            report("Claude", claude: claude, now: now),
+            codex,
+        ]
+        #if COAMING_CURSOR
+        let keychain = KeychainClient.live()
         let cursorRead = CursorCredentialReader(databaseURL: paths.cursorDatabase, keychain: keychain).read()
         let cursorInstalled = FileManager.default.fileExists(atPath: paths.cursorSupport.path)
-        return [
-            report("Claude", claude: claude, now: now),
-            report("Codex", codex: codex, now: now),
-            report("Cursor", cursor: cursorRead, installed: cursorInstalled, now: now),
-        ]
+        reports.append(report("Cursor", cursor: cursorRead, installed: cursorInstalled, now: now))
+        #endif
+        return reports
     }
 
-    public static func lines(now: Date = Date()) -> [String] {
-        check(now: now).map { "\($0.provider): \($0.availability), \($0.expiry), \($0.plan)" }
+    public static func lines(now: Date = Date()) async -> [String] {
+        await check(now: now).map { "\($0.provider): \($0.availability), \($0.expiry), \($0.plan)" }
+    }
+
+    private static func codexReport(paths: ToolPaths, now: Date) async -> CredentialReport {
+        guard let path = CodexBinary.candidates(home: paths.home, environment: paths.environment).first else {
+            return CredentialReport(provider: "Codex", availability: "not installed", expiry: "—", plan: "—")
+        }
+        switch await CodexAppServer.ask(executable: URL(fileURLWithPath: path), now: now) {
+        case .usage(let parsed):
+            return CredentialReport(provider: "Codex", availability: "found", expiry: "—", plan: parsed.planLabel ?? "—")
+        case .needsLogin:
+            return CredentialReport(provider: "Codex", availability: "missing", expiry: "—", plan: "—")
+        case .unsupported:
+            return CredentialReport(provider: "Codex", availability: "unsupported", expiry: "—", plan: "—")
+        case .failed:
+            return CredentialReport(provider: "Codex", availability: "unavailable", expiry: "—", plan: "—")
+        }
     }
 
     private static func report(_ name: String, claude: ClaudeRead, now: Date) -> CredentialReport {
@@ -79,19 +103,7 @@ public enum CredentialChecker {
         }
     }
 
-    private static func report(_ name: String, codex: CodexRead, now: Date) -> CredentialReport {
-        switch codex {
-        case .notInstalled:
-            return CredentialReport(provider: name, availability: "not installed", expiry: "—", plan: "—")
-        case .unsupported:
-            return CredentialReport(provider: name, availability: "unsupported", expiry: "—", plan: "—")
-        case .needsLogin:
-            return CredentialReport(provider: name, availability: "missing", expiry: "—", plan: "—")
-        case .found(let credential):
-            return found(name, expiresAt: credential.expiresAt, plan: "—", now: now)
-        }
-    }
-
+    #if COAMING_CURSOR
     private static func report(_ name: String, cursor: CursorTokenRead, installed: Bool, now: Date) -> CredentialReport {
         switch cursor {
         case .busy:
@@ -118,4 +130,5 @@ public enum CredentialChecker {
         }
         return CredentialReport(provider: name, availability: "found", expiry: expiry, plan: plan)
     }
+    #endif
 }

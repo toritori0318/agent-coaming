@@ -6,7 +6,6 @@ final class SnapshotRedactionTests: XCTestCase {
         let sentinel = "TOKEN_SENTINEL_9f3a"
         let accountSentinel = "ACCOUNT_SENTINEL_7c1d"
         let http = MockHTTP()
-        http.bodies["chatgpt.com"] = Data(#"{"plan_type":"plus","rate_limit":{"primary_window":{"used_percent":4,"limit_window_seconds":18000,"reset_after_seconds":10}}}"#.utf8)
         http.bodies["cursor.com"] = Data(#"{"membershipType":"pro","isUnlimited":false,"individualUsage":{"plan":{"totalPercentUsed":30}}}"#.utf8)
         let cursorToken = try cursorToken(sentinel)
         let now = Date(timeIntervalSince1970: 1_800_000_000)
@@ -16,9 +15,12 @@ final class SnapshotRedactionTests: XCTestCase {
                 writtenAt: now
             ))
         })
-        let codex = CodexProvider(userAgent: "AgentCoaming/1 (macOS)", http: http, read: {
-            .found(CodexCredential(accessToken: sentinel, accountID: accountSentinel, expiresAt: nil))
-        })
+        let codexJSON = Data(#"{"accountId":"ACCOUNT_SENTINEL_7c1d","rateLimits":{"planType":"plus","primary":{"usedPercent":4,"windowDurationMins":300,"resetsAt":1800000010}}}"#.utf8)
+        let parsed = try CodexUsageParser.parse(codexJSON, now: now)
+        let codex = CodexProvider(
+            locate: { URL(fileURLWithPath: "/usr/bin/codex") },
+            ask: { _, _ in .usage(parsed) }
+        )
         let cursor = CursorProvider(
             userAgent: "AgentCoaming/1 (macOS)",
             http: http,
@@ -43,12 +45,7 @@ final class SnapshotRedactionTests: XCTestCase {
 
     func testCredentialDescriptionsAreRedacted() {
         let sentinel = "TOKEN_SENTINEL_9f3a"
-        let codex = CodexCredential(accessToken: sentinel, accountID: sentinel, expiresAt: nil)
         let cursor = CursorCredential(accessToken: sentinel, expiresAt: nil, membershipType: nil)
-        for value in [codex.description, codex.debugDescription, String(reflecting: codex), String(describing: codex)] {
-            XCTAssertFalse(value.contains(sentinel))
-            XCTAssertEqual(value, "<redacted>")
-        }
         XCTAssertFalse(String(reflecting: cursor).contains(sentinel))
         XCTAssertEqual(cursor.debugDescription, "<redacted>")
     }

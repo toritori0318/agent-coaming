@@ -6,7 +6,7 @@ struct AIW {
     static func main() async {
         let arguments = CommandLine.arguments
         if arguments.contains("--check") {
-            for line in CredentialChecker.lines() {
+            for line in await CredentialChecker.lines() {
                 print(line)
             }
             return

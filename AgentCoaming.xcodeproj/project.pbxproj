@@ -58,7 +58,7 @@
 		D6298386511DC9DDD76AD860 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E10E13D1B58B24714BBCAC8B /* CoamingWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingWidgetView.swift; sourceTree = "<group>"; };
 		FDE15DCD01CFA096D2113861 /* CoamingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingWidget.swift; sourceTree = "<group>"; };
-		"TEMP_742917BA-173D-4AB5-B62F-B6F53BE41885" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,10 +131,10 @@
 			);
 			sourceTree = "<group>";
 		};
-		"TEMP_A2CE0B83-DA04-4E6B-AC09-28498DBDD5A2" /* ai-widget */ = {
+		"TEMP_4EB51F55-C4C6-4999-81FB-3E15DCDA748F" /* ai-widget */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_742917BA-173D-4AB5-B62F-B6F53BE41885" /* Config.xcconfig */,
+				"TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */,
 			);
 			path = "ai-widget";
 			sourceTree = "<group>";
@@ -261,7 +261,7 @@
 /* Begin XCBuildConfiguration section */
 		0ED4809DE45E557E3D04EB9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_742917BA-173D-4AB5-B62F-B6F53BE41885" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -316,6 +316,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(COAMING_CURSOR_CONDITION)";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -359,7 +360,7 @@
 		};
 		91A15644754EFAF34F4A4A04 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_742917BA-173D-4AB5-B62F-B6F53BE41885" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -421,7 +422,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(COAMING_CURSOR_CONDITION)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
