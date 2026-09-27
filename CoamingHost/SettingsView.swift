@@ -207,8 +207,8 @@ private struct ClaudeResetSetup: View {
                         NSPasteboard.general.setString(snippet, forType: .string)
                     }
                     Text(language.pick(
-                        ja: "設定したあと、このアプリを一度終了して起動し直すと反映されます。",
-                        en: "After you add the setting, quit this app and open it again for it to take effect."
+                        ja: "次の更新、または「今すぐ更新」で反映されます。",
+                        en: "It appears on the next update, or when you choose Refresh now."
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -381,7 +381,7 @@ private struct UsageStatusBars: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Nothing is said while values are current. A note appears only when bars are empty or old.
+            // Nothing is said while values are current. A note appears when bars are empty, old, or not fetched yet.
             if provider.planLabel?.isEmpty == false || statusLabel != nil {
                 HStack(spacing: 8) {
                     if let plan = provider.planLabel, !plan.isEmpty {
@@ -429,20 +429,19 @@ private struct UsageStatusBars: View {
     private var statusLabel: String? {
         switch provider.status {
         case .ok where !isOld:
-            nil
+            return nil
         case .ok, .stale:
-            provider.fetchedAt.map { fetched in
-                let clock = formatResetClock(fetched, now: Date(), locale: locale)
-                return language.pick(ja: "\(clock) 時点の値", en: "as of \(clock)")
-            }
+            guard let fetched = provider.fetchedAt else { return missingFetchLabel }
+            let clock = formatResetClock(fetched, now: Date(), locale: locale)
+            return language.pick(ja: "\(clock) 時点の値", en: "as of \(clock)")
         case .needsLogin:
-            language.pick(ja: "再ログインが必要", en: "Sign in again")
+            return language.pick(ja: "再ログインが必要", en: "Sign in again")
         case .notInstalled:
-            language.pick(ja: "未インストール", en: "Not installed")
+            return language.pick(ja: "未インストール", en: "Not installed")
         case .unsupported:
-            language.pick(ja: "対象外", en: "Unsupported")
+            return language.pick(ja: "対象外", en: "Unsupported")
         case .notConfigured:
-            language.pick(ja: "未取得（Desktop 起動か statusline 設定）", en: "No data yet (run Desktop or set up status line)")
+            return language.pick(ja: "未取得（Desktop 起動か statusline 設定）", en: "No data yet (run Desktop or set up status line)")
         }
     }
 
@@ -486,8 +485,16 @@ private struct UsageStatusBars: View {
         return formatUsedPercent(window.usedFraction)
     }
 
+    /// Same split as the widget: the first snapshot is waiting, and any other fetch with no prior value failed.
+    private var missingFetchLabel: String {
+        if provider.staleReason == "waiting" {
+            return language.pick(ja: "読み込み中", en: "Loading")
+        }
+        return language.pick(ja: "取得できませんでした", en: "Could not fetch")
+    }
+
     private func resetText(_ window: UsageWindow?) -> String {
-        guard let resets = window?.resetsAt else { return "" }
+        guard let resets = window?.resetsAt, resets > Date() else { return "" }
         let clock = formatResetClock(resets, now: Date(), locale: locale)
         return language.pick(ja: "\(clock) まで", en: "until \(clock)")
     }
