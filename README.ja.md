@@ -2,6 +2,8 @@
 
 [English](README.md)
 
+<img src="docs/app-icon.png" width="128" alt="アプリアイコン。紺のパネルと、目に見える2本の使用量ゲージ。">
+
 macOS のデスクトップウィジェットに、Claude Code と Codex CLI の使用量（使った割合とリセット時刻）を出すアプリです。Cursor は既定のビルドには入っていません。任意で、`COAMING_CURSOR=1` を付けて自分でビルドしたときだけ入ります。
 
 ![既定ビルドの端のインジケータ。Claude と Codex は 5h と 1w。Cursor は入っていません。](docs/indicator.jpg)

@@ -2,6 +2,8 @@
 
 [日本語](README.ja.md)
 
+<img src="docs/app-icon.png" width="128" alt="App icon. A navy panel with two usage gauges that read as eyes.">
+
 A macOS app that shows how much of the Claude Code and Codex CLI limits is used, and when they reset. Cursor is not in the default build. It is optional, and only a build with `COAMING_CURSOR=1` includes it.
 
 ![Corner indicator in the default build. Claude and Codex show 5h and 1w. Cursor is not included.](docs/indicator.jpg)
