@@ -55,10 +55,10 @@ final class RefresherTests: XCTestCase {
         let http = MockHTTP()
         http.status = 429
         let store = MemoryBackoffStore()
-        let refresher = Refresher(providers: [idleClaude(), codex(http), idleCursor(http)], previous: nil, backoff: store)
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: store)
 
         _ = await refresher.refresh(at: start, force: false)
-        var state = await refresher.backoffState(.codex)
+        var state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, start.addingTimeInterval(Constants.retryAfterDefault))
         XCTAssertEqual(http.count, 1)
 
@@ -67,23 +67,22 @@ final class RefresherTests: XCTestCase {
 
         let second = start.addingTimeInterval(Constants.retryAfterDefault + 1)
         _ = await refresher.refresh(at: second, force: false)
-        state = await refresher.backoffState(.codex)
+        state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, second.addingTimeInterval(Constants.retryAfterConsecutive))
         XCTAssertEqual(http.count, 2)
 
         let third = second.addingTimeInterval(Constants.retryAfterConsecutive + 1)
         _ = await refresher.refresh(at: third, force: false)
-        state = await refresher.backoffState(.codex)
+        state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, third.addingTimeInterval(Constants.retryAfterConsecutive))
 
         http.status = 200
-        http.bodies["chatgpt.com"] = codexBody
         let fourth = third.addingTimeInterval(Constants.retryAfterConsecutive + 1)
         let snapshot = await refresher.refresh(at: fourth, force: false)
-        state = await refresher.backoffState(.codex)
+        state = await refresher.backoffState(.cursor)
         XCTAssertNil(state.blockedUntil)
         XCTAssertEqual(state.consecutive429, 0)
-        XCTAssertEqual(snapshot.provider(.codex)?.status, .ok)
+        XCTAssertEqual(snapshot.provider(.cursor)?.status, .ok)
         XCTAssertEqual(Constants.pollInterval, 300)
     }
 
@@ -120,30 +119,45 @@ final class RefresherTests: XCTestCase {
         let http = MockHTTP()
         http.status = 429
         http.headers = ["Retry-After": "7200"]
-        let refresher = Refresher(providers: [idleClaude(), codex(http), idleCursor(http)], previous: nil, backoff: MemoryBackoffStore())
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: MemoryBackoffStore())
         _ = await refresher.refresh(at: now, force: false)
-        let state = await refresher.backoffState(.codex)
+        let state = await refresher.backoffState(.cursor)
         XCTAssertEqual(state.blockedUntil, now.addingTimeInterval(Constants.retryAfterMax))
     }
 
     func testNeedsLoginDoesNotUseNetwork() async {
         let now = Date()
         let http = MockHTTP()
-        let provider = CodexProvider(userAgent: "AgentCoaming/1 (macOS)", http: http, read: {
-            .found(CodexCredential(accessToken: "expired", accountID: nil, expiresAt: now.addingTimeInterval(-120)))
-        })
+        let provider = CodexProvider(
+            locate: { URL(fileURLWithPath: "/usr/bin/codex") },
+            ask: { _, _ in .needsLogin("sign in with ChatGPT in Codex") }
+        )
         let refresher = Refresher(providers: [idleClaude(), provider, idleCursor(http)], previous: nil, backoff: MemoryBackoffStore())
         let snapshot = await refresher.refresh(at: now, force: true)
         XCTAssertEqual(http.count, 0)
         XCTAssertEqual(snapshot.provider(.codex)?.status, .needsLogin)
-        XCTAssertTrue(snapshot.provider(.codex)?.staleReason?.contains("token expired") == true)
+        XCTAssertEqual(snapshot.provider(.codex)?.staleReason, "sign in with ChatGPT in Codex")
+    }
+
+    func testCodexRateLimitMessageBacksOff() async {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let provider = CodexProvider(
+            locate: { URL(fileURLWithPath: "/usr/bin/codex") },
+            ask: { _, _ in CodexUsageParser.reply(forRPCMessage: "rate limit exceeded") }
+        )
+        let refresher = Refresher(providers: [idleClaude(), provider], previous: nil, backoff: MemoryBackoffStore())
+        _ = await refresher.refresh(at: now, force: false)
+        let state = await refresher.backoffState(.codex)
+        XCTAssertEqual(state.blockedUntil, now.addingTimeInterval(Constants.retryAfterDefault))
+        let snapshot = await refresher.refresh(at: now.addingTimeInterval(10), force: false)
+        XCTAssertEqual(snapshot.provider(.codex)?.status, .stale)
     }
 
     func testManualRefreshRespectsRecentAttempt() async {
         let now = Date(timeIntervalSince1970: 1_900_000_000)
         let http = MockHTTP()
         http.status = 429
-        let refresher = Refresher(providers: [idleClaude(), codex(http), idleCursor(http)], previous: nil, backoff: MemoryBackoffStore())
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: MemoryBackoffStore())
         _ = await refresher.refresh(at: now, force: false)
         XCTAssertEqual(http.count, 1)
         _ = await refresher.refresh(at: now.addingTimeInterval(10), force: true)
@@ -156,21 +170,20 @@ final class RefresherTests: XCTestCase {
         // coaming CLI: no previous snapshot, but the backoff store still has lastAttemptAt from an earlier process.
         let now = Date(timeIntervalSince1970: 1_900_000_000)
         let http = MockHTTP()
-        http.bodies["chatgpt.com"] = codexBody
         let store = MemoryBackoffStore()
-        store.save(.codex, BackoffState(blockedUntil: nil, consecutive429: 0, lastAttemptAt: now.addingTimeInterval(-10)))
-        let refresher = Refresher(providers: [idleClaude(), codex(http), idleCursor(http)], previous: nil, backoff: store)
+        store.save(.cursor, BackoffState(blockedUntil: nil, consecutive429: 0, lastAttemptAt: now.addingTimeInterval(-10)))
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: store)
         let snapshot = await refresher.refresh(at: now, force: true)
         XCTAssertEqual(http.count, 1)
-        XCTAssertEqual(snapshot.provider(.codex)?.status, .ok)
+        XCTAssertEqual(snapshot.provider(.cursor)?.status, .ok)
     }
 
     func testFreshProcessStillRespectsRateLimitBlock() async {
         let now = Date(timeIntervalSince1970: 1_900_000_000)
         let http = MockHTTP()
         let store = MemoryBackoffStore()
-        store.save(.codex, BackoffState(blockedUntil: now.addingTimeInterval(600), consecutive429: 1, lastAttemptAt: now.addingTimeInterval(-120)))
-        let refresher = Refresher(providers: [idleClaude(), codex(http), idleCursor(http)], previous: nil, backoff: store)
+        store.save(.cursor, BackoffState(blockedUntil: now.addingTimeInterval(600), consecutive429: 1, lastAttemptAt: now.addingTimeInterval(-120)))
+        let refresher = Refresher(providers: [idleClaude(), metered(http)], previous: nil, backoff: store)
         _ = await refresher.refresh(at: now, force: true)
         XCTAssertEqual(http.count, 0)
     }
@@ -195,7 +208,7 @@ final class RefresherTests: XCTestCase {
         } catch {
             XCTFail("unexpected \(error)")
         }
-        request = URLRequest(url: URL(string: "http://chatgpt.com/backend-api/wham/usage")!)
+        request = URLRequest(url: URL(string: "http://cursor.com/api/usage-summary")!)
         do {
             _ = try await client.send(request)
             XCTFail("expected rejection")
@@ -208,20 +221,20 @@ final class RefresherTests: XCTestCase {
     func testRedirectMustStayOnSameHost() {
         let gate = AllowlistRedirectGate()
         let session = URLSession(configuration: .ephemeral)
-        let task = session.dataTask(with: URLRequest(url: URL(string: "https://chatgpt.com/a")!))
-        let response = HTTPURLResponse(url: URL(string: "https://chatgpt.com/a")!, statusCode: 302, httpVersion: nil, headerFields: nil)!
+        let task = session.dataTask(with: URLRequest(url: URL(string: "https://cursor.com/a")!))
+        let response = HTTPURLResponse(url: URL(string: "https://cursor.com/a")!, statusCode: 302, httpVersion: nil, headerFields: nil)!
         let crossHost = expectation(description: "cross host")
-        gate.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: "https://cursor.com/b")!)) { request in
+        gate.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: "https://example.com/b")!)) { request in
             XCTAssertNil(request)
             crossHost.fulfill()
         }
         let sameHost = expectation(description: "same host")
-        gate.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: "https://chatgpt.com/b")!)) { request in
+        gate.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: "https://cursor.com/b")!)) { request in
             XCTAssertNotNil(request)
             sameHost.fulfill()
         }
         let otherPort = expectation(description: "other port")
-        gate.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: "https://chatgpt.com:8443/b")!)) { request in
+        gate.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: "https://cursor.com:8443/b")!)) { request in
             XCTAssertNil(request)
             otherPort.fulfill()
         }
@@ -246,12 +259,29 @@ private final class CountingProvider: UsageProvider, @unchecked Sendable {
     }
 }
 
-private let codexBody = Data(#"{"plan_type":"plus","rate_limit":{"primary_window":{"used_percent":4,"limit_window_seconds":18000,"reset_after_seconds":10}}}"#.utf8)
+/// HTTP 429 backoff for the optional Cursor client. Codex does not use this client.
+/// Codex throttling is `testCodexRateLimitMessageBacksOff`.
+private struct MeteredProvider: UsageProvider {
+    var id: ProviderID { .cursor }
+    var http: MockHTTP
 
-private func codex(_ http: MockHTTP) -> CodexProvider {
-    CodexProvider(userAgent: "AgentCoaming/1 (macOS)", http: http, read: {
-        .found(CodexCredential(accessToken: "token", accountID: nil, expiresAt: nil))
-    })
+    func fetch(now: Date) async -> ProviderAttempt {
+        let request = URLRequest(url: URL(string: "https://cursor.com/api/usage-summary")!)
+        do {
+            let (_, response) = try await http.send(request)
+            try UsageHTTP.reject(response, data: Data(), provider: "cursor", now: now)
+            let window = UsageWindow(kind: .fiveHour, label: "5h", usedFraction: 0.04, resetsAt: nil)
+            return .ok(.cursor, plan: "Pro", windows: [window], at: now)
+        } catch let error as UsageFetchError {
+            return .from(error: error, id: .cursor, plan: nil)
+        } catch {
+            return .from(error: .offline, id: .cursor, plan: nil)
+        }
+    }
+}
+
+private func metered(_ http: MockHTTP) -> MeteredProvider {
+    MeteredProvider(http: http)
 }
 
 private func idleClaude() -> ClaudeProvider {

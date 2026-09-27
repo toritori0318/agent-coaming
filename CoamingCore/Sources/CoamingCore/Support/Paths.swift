@@ -38,16 +38,11 @@ struct ToolPaths: Sendable {
     var claudeRateLimits: URL { supportDirectory.appendingPathComponent("claude-rate-limits.json") }
     var claudeDesktopDirectory: URL { home.appendingPathComponent("Library/Application Support/Claude", isDirectory: true) }
     var claudeDesktopUsageHistory: URL { claudeDesktopDirectory.appendingPathComponent("plan-usage-history.json") }
-    var codexHome: URL {
-        if let raw = environment["CODEX_HOME"], !raw.isEmpty {
-            return URL(fileURLWithPath: raw, isDirectory: true)
-        }
-        return home.appendingPathComponent(".codex")
-    }
-    var codexAuth: URL { codexHome.appendingPathComponent("auth.json") }
-    var codexSessions: URL { codexHome.appendingPathComponent("sessions") }
+    // Cursor's local session is read only by a COAMING_CURSOR build. See ProviderID.included.
+    #if COAMING_CURSOR
     var cursorSupport: URL { home.appendingPathComponent("Library/Application Support/Cursor") }
     var cursorDatabase: URL { cursorSupport.appendingPathComponent("User/globalStorage/state.vscdb") }
+    #endif
     var claudeBinaryExists: Bool { !ClaudeBinary.candidates(home: home, environment: environment).isEmpty }
 }
 

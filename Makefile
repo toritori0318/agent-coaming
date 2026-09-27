@@ -6,6 +6,7 @@ APP = Agent Coaming.app
 
 .PHONY: generate build test check run install
 
+# COAMING_CURSOR=1 includes the optional Cursor path. The default build leaves it out. See ProviderID.included.
 generate:
 	@if [ -z "$(COAMING_TEAM_ID)" ]; then \
 		echo "COAMING_TEAM_ID is not set."; \
@@ -13,16 +14,25 @@ generate:
 		echo "Example: COAMING_TEAM_ID=XXXXXXXXXX make generate"; \
 		exit 1; \
 	fi
-	@printf 'COAMING_TEAM_ID = %s\nDEVELOPMENT_TEAM = $$(COAMING_TEAM_ID)\n' "$(COAMING_TEAM_ID)" > Config.xcconfig
+	@if [ "$(COAMING_CURSOR)" = "1" ]; then cursor_condition=COAMING_CURSOR; else cursor_condition=; fi; \
+	printf 'COAMING_TEAM_ID = %s\nDEVELOPMENT_TEAM = $$(COAMING_TEAM_ID)\nCOAMING_CURSOR_CONDITION = %s\n' "$(COAMING_TEAM_ID)" "$$cursor_condition" > Config.xcconfig
 	xcodegen generate
 
 build: generate
-	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug -destination 'platform=macOS' -derivedDataPath $(DERIVED) build
+	@mkdir -p $(DERIVED)
+	@if [ "$$(cat $(DERIVED)/cursor-flag 2>/dev/null)" != "$(COAMING_CURSOR)" ]; then \
+		rm -rf $(DERIVED)/Build $(DERIVED)/SourcePackages $(DERIVED)/ModuleCache.noindex; \
+		printf '%s' "$(COAMING_CURSOR)" > $(DERIVED)/cursor-flag; \
+	fi
+	COAMING_CURSOR="$(COAMING_CURSOR)" xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug -destination 'platform=macOS' -derivedDataPath $(DERIVED) build
 
+# Tests compile the optional Cursor path so it stays covered. The app build does not, unless COAMING_CURSOR=1.
 test:
-	swift test --package-path CoamingCore
+	COAMING_CURSOR=1 swift test --package-path CoamingCore
 
-check: test
+check:
+	env -u COAMING_CURSOR swift build --package-path CoamingCore --scratch-path $(DERIVED)/spm-off
+	$(MAKE) test
 	python3 scripts/check.py
 
 run: build

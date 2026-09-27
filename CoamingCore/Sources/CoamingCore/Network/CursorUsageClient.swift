@@ -1,3 +1,5 @@
+#if COAMING_CURSOR
+// Compiled only with COAMING_CURSOR=1. The default build does not call cursor.com. See ProviderID.included.
 import Foundation
 
 struct CursorUsageClient: Sendable {
@@ -110,3 +112,4 @@ private struct CursorBucketDTO: Decodable {
         totalPercentUsed = try container.decodeFlexibleDoubleIfPresent(forKey: .totalPercentUsed)
     }
 }
+#endif

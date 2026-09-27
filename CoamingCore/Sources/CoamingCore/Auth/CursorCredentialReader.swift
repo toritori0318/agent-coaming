@@ -1,3 +1,5 @@
+#if COAMING_CURSOR
+// Compiled only with COAMING_CURSOR=1. Reads Cursor's local session. See ProviderID.included.
 import Foundation
 import SQLite3
 
@@ -212,3 +214,4 @@ func decodeStored(_ data: Data) -> String? {
     }
     return String(data: data, encoding: .utf8)
 }
+#endif

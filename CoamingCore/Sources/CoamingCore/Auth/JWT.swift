@@ -32,6 +32,8 @@ enum JWT {
     }
 }
 
+#if COAMING_CURSOR
+// Cursor cookie built from the access token. The default build omits this. See ProviderID.included.
 enum CursorIdentity {
     static func userID(from accessToken: String) -> String? {
         guard let subject = JWT.subject(of: accessToken) else { return nil }
@@ -52,3 +54,4 @@ enum CursorIdentity {
         "WorkosCursorSessionToken=\(userID)%3A%3A\(accessToken)"
     }
 }
+#endif

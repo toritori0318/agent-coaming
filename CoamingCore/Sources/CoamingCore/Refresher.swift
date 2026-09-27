@@ -14,11 +14,11 @@ public actor Refresher {
         self.backoff = backoff
     }
 
-    public func refresh(force: Bool = false, enabled: Set<ProviderID> = Set(ProviderID.allCases)) async -> Snapshot {
+    public func refresh(force: Bool = false, enabled: Set<ProviderID> = Set(ProviderID.included)) async -> Snapshot {
         await refresh(at: Date(), force: force, enabled: enabled)
     }
 
-    func refresh(at now: Date, force: Bool, enabled: Set<ProviderID> = Set(ProviderID.allCases)) async -> Snapshot {
+    func refresh(at now: Date, force: Bool, enabled: Set<ProviderID> = Set(ProviderID.included)) async -> Snapshot {
         // Join an in-flight refresh so the timer and a manual refresh do not run twice.
         if let inFlight { return await inFlight.value }
         let task = Task { await perform(at: now, force: force, enabled: enabled) }
@@ -111,7 +111,7 @@ public actor Refresher {
 
     /// Disabled providers are omitted from the written snapshot. Their previous values stay in memory for re-enable.
     private func snapshot(at now: Date, enabled: Set<ProviderID>) -> Snapshot {
-        let providers = ProviderID.allCases.map { id in
+        let providers = ProviderID.included.map { id in
             enabled.contains(id) ? previous[id] ?? .make(id, status: .notInstalled) : .make(id, status: .notInstalled)
         }
         return Snapshot(schemaVersion: Snapshot.currentSchemaVersion, generatedAt: now, providers: providers)

@@ -1,3 +1,5 @@
+#if COAMING_CURSOR
+// Compiled only with COAMING_CURSOR=1. Asks cursor.com with the local session. See ProviderID.included.
 import Foundation
 
 struct CursorProvider: UsageProvider {
@@ -35,3 +37,4 @@ struct CursorProvider: UsageProvider {
         }
     }
 }
+#endif

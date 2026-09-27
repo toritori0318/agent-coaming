@@ -10,6 +10,21 @@ public enum ProviderID: String, Codable, CaseIterable, Sendable {
         case .cursor: "Cursor"
         }
     }
+
+    /// Services this build fetches.
+    ///
+    /// Cursor is omitted unless the binary was built with `COAMING_CURSOR`.
+    /// Cursor does not publish a personal usage API. The optional path reads the local
+    /// session and polls cursor.com, the call closest to Cursor's rules against automated
+    /// access. The default build leaves that out. Passing `COAMING_CURSOR=1` at build time
+    /// compiles it in, and that choice belongs to the person building.
+    public static var included: [ProviderID] {
+        #if COAMING_CURSOR
+        [.claude, .codex, .cursor]
+        #else
+        [.claude, .codex]
+        #endif
+    }
 }
 
 public enum ProviderStatus: String, Codable, Sendable {
@@ -126,7 +141,7 @@ public struct Snapshot: Codable, Sendable, Equatable {
         Snapshot(
             schemaVersion: currentSchemaVersion,
             generatedAt: now,
-            providers: ProviderID.allCases.map {
+            providers: ProviderID.included.map {
                 .make($0, status: .stale, reason: "waiting")
             }
         )
@@ -134,5 +149,15 @@ public struct Snapshot: Codable, Sendable, Equatable {
 
     public func provider(_ id: ProviderID) -> ProviderSnapshot? {
         providers.first { $0.id == id }
+    }
+
+    /// Drops services this build does not fetch, so an older snapshot cannot show them.
+    public func keepingIncluded() -> Snapshot {
+        let allowed = Set(ProviderID.included)
+        return Snapshot(
+            schemaVersion: schemaVersion,
+            generatedAt: generatedAt,
+            providers: providers.filter { allowed.contains($0.id) }
+        )
     }
 }

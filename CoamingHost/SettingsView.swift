@@ -78,8 +78,11 @@ struct SettingsView: View {
                         ProviderSettingsSection(id: .claude, model: model)
                         Divider()
                         ProviderSettingsSection(id: .codex, model: model)
+                        // Cursor settings exist only in a COAMING_CURSOR build. See ProviderID.included.
+                        #if COAMING_CURSOR
                         Divider()
                         ProviderSettingsSection(id: .cursor, model: model)
+                        #endif
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4)
@@ -179,13 +182,7 @@ private struct UsageGuide: View {
                         en: "About every 5 minutes. If a service refuses the request, automatic updates pause for up to 60 minutes. Refresh now still goes through if at least 60 seconds have passed since the last fetch."
                     )
                 )
-                block(
-                    language.pick(ja: "棒", en: "Bars"),
-                    language.pick(
-                        ja: "長いほど使っています。白は 75% 未満、オレンジは 75% 以上、赤は 90% 以上です。Claude と Codex は 5h と 1w、Cursor は 1mo です。ドラッグで移動、クリックでこの画面です。",
-                        en: "Longer means more used. White is under 75%, orange is 75% or more, and red is 90% or more. Claude and Codex show 5h and 1w. Cursor shows 1mo. Drag to move it. Click to open this window."
-                    )
-                )
+                block(language.pick(ja: "棒", en: "Bars"), barsText)
                 block(
                     language.pick(ja: "メニューバー", en: "Menu bar"),
                     language.pick(
@@ -193,25 +190,56 @@ private struct UsageGuide: View {
                         en: "Shows only the highest usage among enabled services."
                     )
                 )
-                block(
-                    language.pick(ja: "読むもの", en: "What it reads"),
-                    language.pick(
-                        ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: $CODEX_HOME/auth.json。Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb（読み取り専用）、無ければ Keychain の cursor-access-token。すべて読むだけで、更新も書き換えもしません。",
-                        en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: $CODEX_HOME/auth.json. Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb (read-only), or the Keychain item cursor-access-token. Everything is read only, never refreshed or rewritten."
-                    )
-                )
-                block(
-                    language.pick(ja: "通信先", en: "Network"),
-                    language.pick(
-                        ja: "chatgpt.com（Codex の使用量）と cursor.com（Cursor の使用量）だけです。Claude 向けには通信しません。",
-                        en: "Only chatgpt.com (Codex usage) and cursor.com (Cursor usage). Nothing is sent for Claude."
-                    )
-                )
+                block(language.pick(ja: "読むもの", en: "What it reads"), readsText)
+                block(language.pick(ja: "通信先", en: "Network"), networkText)
             }
             .padding(.top, 8)
         } label: {
             Text(language.pick(ja: "仕様の説明", en: "Specification"))
         }
+    }
+
+    // Copy differs because a COAMING_CURSOR build is the only one that reads Cursor. See ProviderID.included.
+    private var barsText: String {
+        #if COAMING_CURSOR
+        language.pick(
+            ja: "長いほど使っています。白は 75% 未満、オレンジは 75% 以上、赤は 90% 以上です。Claude と Codex は 5h と 1w、Cursor は 1mo です。ドラッグで移動、クリックでこの画面です。",
+            en: "Longer means more used. White is under 75%, orange is 75% or more, and red is 90% or more. Claude and Codex show 5h and 1w. Cursor shows 1mo. Drag to move it. Click to open this window."
+        )
+        #else
+        language.pick(
+            ja: "長いほど使っています。白は 75% 未満、オレンジは 75% 以上、赤は 90% 以上です。Claude と Codex は 5h と 1w です。ドラッグで移動、クリックでこの画面です。",
+            en: "Longer means more used. White is under 75%, orange is 75% or more, and red is 90% or more. Claude and Codex show 5h and 1w. Drag to move it. Click to open this window."
+        )
+        #endif
+    }
+
+    private var readsText: String {
+        #if COAMING_CURSOR
+        language.pick(
+            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。このアプリは auth.json を読みません。問い合わせる CLI が自分のログインファイルを更新することがあります。Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb（読み取り専用）、無ければ Keychain の cursor-access-token。",
+            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. This app does not read auth.json. The CLI may update its own login file. Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb (read-only), or the Keychain item cursor-access-token."
+        )
+        #else
+        language.pick(
+            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。このアプリは auth.json を読みません。問い合わせる CLI が自分のログインファイルを更新することがあります。",
+            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. This app does not read auth.json. The CLI may update its own login file."
+        )
+        #endif
+    }
+
+    private var networkText: String {
+        #if COAMING_CURSOR
+        language.pick(
+            ja: "このアプリが直接通信するのは cursor.com（Cursor の使用量）だけです。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。",
+            en: "The only host this app calls is cursor.com, for Cursor usage. The codex CLI asks chatgpt.com for Codex usage."
+        )
+        #else
+        language.pick(
+            ja: "このアプリ自身は通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。",
+            en: "This app does not send requests. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file."
+        )
+        #endif
     }
 
     private func block(_ title: String, _ body: String) -> some View {

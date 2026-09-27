@@ -2,12 +2,12 @@
 
 [日本語](README.ja.md)
 
-A macOS app that shows only the usage of Claude Code, Codex CLI, and Cursor: how much of the limit is used, and when it resets.
+A macOS app that shows how much of the Claude Code and Codex CLI limits is used, and when they reset. Cursor is not in the default build. It is optional, and only a build with `COAMING_CURSOR=1` includes it.
 
-![Corner indicator. Claude and Codex show 5h and 1w. Cursor shows 1mo.](docs/indicator.jpg)
+![Corner indicator in the default build. Claude and Codex show 5h and 1w. Cursor is not included.](docs/indicator.jpg)
 
-- Login material is **read-only**. Nothing is rewritten, copied, or refreshed
-- The only network hosts are `chatgpt.com` (Codex) and `cursor.com` (Cursor). There is no network call for Claude
+- This app reads login material and does not rewrite it, copy it, or refresh tokens. The Codex CLI may update its own login file
+- This app does not open a connection in the default build. Claude usage comes from local files. Codex usage comes from the local `codex` command, which asks chatgpt.com
 - For personal use. Not distributed on the App Store and not notarized
 
 ## How it reads usage
@@ -15,10 +15,12 @@ A macOS app that shows only the usage of Claude Code, Codex CLI, and Cursor: how
 | Service | Source |
 |---|---|
 | Claude | The newer of two local files. (1) `plan-usage-history.json`, written by Claude Desktop about every 15 minutes (used percent only). (2) A file written by the bundled script from the `rate_limits` Claude Code passes to its status line (includes reset times). OAuth tokens are not touched |
-| Codex CLI | The token in `$CODEX_HOME/auth.json`, then the usage API on `chatgpt.com` |
-| Cursor | A read-only `state.vscdb`, or the Keychain token, then the usage API on `cursor.com` |
+| Codex CLI | Asks the installed `codex` command (`codex app-server`) for `account/rateLimits/read`. The CLI asks chatgpt.com and may refresh its own login file. This app does not read `auth.json` |
+| Cursor | Not in the default build. `COAMING_CURSOR=1` compiles in a read-only `state.vscdb` (or the Keychain token) and a call to `cursor.com` |
 
 This app does not use Claude's OAuth token. Anthropic reserves that token for Claude Code and its native apps. The app reads the values Claude Desktop and Claude Code already keep locally.
+
+Cursor does not publish a personal usage API. Reading the local session and polling `cursor.com` sits closest to Cursor's rules against automated access, so the default build leaves Cursor out. `COAMING_CURSOR=1` compiles that path in. Building it is your own decision. The picture above is the default build, with Claude and Codex only.
 
 - **If Claude Desktop (including Cowork) is running, the 5-hour and 7-day percents appear with no extra setup** (updated about every 15 minutes; no reset time)
 - Setting the Claude Code status line adds reset times while a session is running
@@ -36,6 +38,12 @@ This app does not use Claude's OAuth token. Anthropic reserves that token for Cl
 
 ```sh
 COAMING_TEAM_ID=XXXXXXXXXX make install
+```
+
+To include Cursor:
+
+```sh
+COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 ```
 
 `XXXXXXXXXX` is the Team ID shown in Xcode → Settings → Accounts. This installs `~/Applications/Agent Coaming.app` and copies the Claude status line script to `~/Library/Application Support/Agent Coaming/claude-statusline.sh`.

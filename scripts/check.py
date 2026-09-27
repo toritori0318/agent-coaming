@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Static checks. internal/ lists forbidden hosts, so it is skipped. Fixtures are skipped too."""
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -21,7 +22,17 @@ FORBIDDEN = [
     "SecItemAdd",
     "SecItemUpdate",
     "SecItemDelete",
+    "chatgpt.com/backend-api",
+    "wham/usage",
 ]
+# Strings that must be absent from the flag-less package build. See ProviderID.included.
+DEFAULT_BUILD_MARKERS = (
+    "cursor.com",
+    "usage-summary",
+    "state.vscdb",
+    "WorkosCursorSessionToken",
+    "cursor-access-token",
+)
 # Collapse "a" + "b" (Swift) and adjacent "a""b" / 'a''b' (shell) so a split forbidden word still matches.
 LITERAL_JOIN = re.compile(r'"\s*\+\s*"|""|\'\'')
 
@@ -69,7 +80,43 @@ def main() -> int:
             print(f"refresh token string in {path.relative_to(ROOT)}:{lineno}")
             failed = True
 
+    if check_default_build():
+        failed = True
+
     return 1 if failed else 0
+
+
+def check_default_build() -> bool:
+    root = ROOT / "build" / "spm-off"
+    if not root.is_dir():
+        print("default build missing: build/spm-off")
+        return True
+    targets = [
+        path
+        for path in root.rglob("*")
+        if path.is_file() and (path.name == "coaming" or path.suffix == ".o" or path.name.startswith("libCoamingCore"))
+    ]
+    if not any(path.name == "coaming" for path in targets):
+        print("default build has no coaming executable under build/spm-off")
+        return True
+    failed = False
+    for path in targets:
+        try:
+            output = subprocess.run(
+                ["strings", "-a", str(path)],
+                check=False,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+        except OSError as error:
+            print(f"strings failed: {error}")
+            return True
+        for marker in DEFAULT_BUILD_MARKERS:
+            if marker in output.stdout:
+                print(f"default build contains {marker} in {path.relative_to(ROOT)}")
+                failed = True
+    return failed
 
 
 if __name__ == "__main__":

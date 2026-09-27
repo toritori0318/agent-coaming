@@ -13,7 +13,11 @@ struct CoamingWidget: Widget {
             CoamingWidgetView(entry: entry)
         }
         .configurationDisplayName("Agent Coaming")
+        #if COAMING_CURSOR
         .description("Usage for Claude Code, Codex, and Cursor")
+        #else
+        .description("Usage for Claude Code and Codex")
+        #endif
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -42,25 +46,29 @@ private enum GallerySnapshot {
     static func make(now: Date = Date()) -> Snapshot {
         let primary = UsageWindow(kind: .fiveHour, label: "5h", usedFraction: 0.37, resetsAt: now.addingTimeInterval(3600))
         let secondary = UsageWindow(kind: .weekly, label: "Weekly", usedFraction: 0.12, resetsAt: now.addingTimeInterval(86_400))
+        var providers = [
+            ProviderSnapshot(id: .claude, displayName: "Claude", status: .ok, planLabel: "Max 5x", windows: [primary, secondary], fetchedAt: now, staleReason: nil),
+            ProviderSnapshot(id: .codex, displayName: "Codex", status: .ok, planLabel: "Codex plus", windows: [primary, secondary], fetchedAt: now, staleReason: nil),
+        ]
+        // The gallery shows Cursor only when this extension was built with COAMING_CURSOR. See ProviderID.included.
+        #if COAMING_CURSOR
+        providers.append(ProviderSnapshot(
+            id: .cursor,
+            displayName: "Cursor",
+            status: .ok,
+            planLabel: "Pro",
+            windows: [
+                UsageWindow(kind: .billingPlan, label: "Plan", usedFraction: 0.37, resetsAt: now.addingTimeInterval(86_400)),
+                UsageWindow(kind: .billingOnDemand, label: "On-demand", usedFraction: 0.12, resetsAt: now.addingTimeInterval(86_400)),
+            ],
+            fetchedAt: now,
+            staleReason: nil
+        ))
+        #endif
         return Snapshot(
             schemaVersion: Snapshot.currentSchemaVersion,
             generatedAt: now,
-            providers: [
-                ProviderSnapshot(id: .claude, displayName: "Claude", status: .ok, planLabel: "Max 5x", windows: [primary, secondary], fetchedAt: now, staleReason: nil),
-                ProviderSnapshot(id: .codex, displayName: "Codex", status: .ok, planLabel: "Codex plus", windows: [primary, secondary], fetchedAt: now, staleReason: nil),
-                ProviderSnapshot(
-                    id: .cursor,
-                    displayName: "Cursor",
-                    status: .ok,
-                    planLabel: "Pro",
-                    windows: [
-                        UsageWindow(kind: .billingPlan, label: "Plan", usedFraction: 0.37, resetsAt: now.addingTimeInterval(86_400)),
-                        UsageWindow(kind: .billingOnDemand, label: "On-demand", usedFraction: 0.12, resetsAt: now.addingTimeInterval(86_400)),
-                    ],
-                    fetchedAt: now,
-                    staleReason: nil
-                ),
-            ]
+            providers: providers
         )
     }
 }

@@ -30,7 +30,7 @@ final class MockHTTP: HTTPClient, @unchecked Sendable {
         counter.withLock { $0 += 1 }
         let host = request.url?.host ?? ""
         let body = bodies[host] ?? Data("{}".utf8)
-        let response = HTTPURLResponse(url: request.url ?? URL(string: "https://chatgpt.com/")!, statusCode: status, httpVersion: nil, headerFields: headers)!
+        let response = HTTPURLResponse(url: request.url ?? URL(string: "https://cursor.com/")!, statusCode: status, httpVersion: nil, headerFields: headers)!
         return (body, response)
     }
 }
