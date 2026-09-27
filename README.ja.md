@@ -8,6 +8,8 @@ macOS のデスクトップウィジェットに、Claude Code と Codex CLI の
 
 ![既定ビルドの端のインジケータ。Claude と Codex は 5h と 1w。Cursor は入っていません。](docs/indicator.jpg)
 
+![既定ビルドの設定画面。Claude と Codex は 5h と 1w。Cursor は入っていません。](docs/settings.jpg)
+
 - このアプリはログイン情報を読むだけで、書き換え・複製・トークン更新はしません。Codex CLI が自分のログインファイルを更新することはあります
 - このアプリ自身は、既定のビルドでは通信しません。Claude は手元のファイルです。Codex の使用量は、手元の `codex` コマンドが chatgpt.com に問い合わせます
 - 個人利用向け。App Store 配布や公証はしていません

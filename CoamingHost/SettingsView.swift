@@ -6,6 +6,20 @@ struct SettingsView: View {
 
     var body: some View {
         let language = model.language
+        VStack(spacing: 0) {
+            content(language)
+            Divider()
+            footer(language)
+        }
+        .frame(minWidth: 560, minHeight: 640)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                SettingsTitle()
+            }
+        }
+    }
+
+    private func content(_ language: AppLanguage) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
@@ -89,15 +103,30 @@ struct SettingsView: View {
                 }
 
                 UsageGuide(language: language)
-
-                Button(language.pick(ja: "終了", en: "Quit")) {
-                    NSApp.terminate(nil)
-                }
-                .keyboardShortcut("q", modifiers: .command)
             }
             .padding(20)
         }
-        .frame(minWidth: 560, minHeight: 640)
+    }
+
+    /// Pinned below the scroll view. The app has no Dock icon and keeps running after this window closes,
+    /// so this is the one visible way to quit, and the note says that closing is not quitting.
+    private func footer(_ language: AppLanguage) -> some View {
+        HStack(spacing: 12) {
+            Text(language.pick(
+                ja: "このウィンドウを閉じても、インジケータは動き続けます。",
+                en: "Closing this window keeps the indicator running."
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            Spacer()
+            Button(language.pick(ja: "Agent Coaming を終了", en: "Quit Agent Coaming")) {
+                NSApp.terminate(nil)
+            }
+            .keyboardShortcut("q", modifiers: .command)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(.bar)
     }
 
     private func noticeText(_ notice: LoginItemNotice, language: AppLanguage) -> String {
@@ -113,6 +142,21 @@ struct SettingsView: View {
                 en: "The login item could not be changed. Put the app in ~/Applications and try again."
             )
         }
+    }
+}
+
+/// Centered in the title bar. The window title is hidden so this icon and name are the header.
+private struct SettingsTitle: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath))
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 18, height: 18)
+            Text("Agent Coaming")
+                .font(.system(size: 13, weight: .semibold))
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -293,7 +337,7 @@ private struct UsageGuide: View {
                         en: "Shows only the highest usage among enabled services."
                     )
                 )
-                block(language.pick(ja: "読むもの", en: "What it reads"), readsText)
+                reads
                 block(language.pick(ja: "通信先", en: "Network"), networkText)
             }
             .padding(.top, 8)
@@ -317,18 +361,57 @@ private struct UsageGuide: View {
         #endif
     }
 
-    private var readsText: String {
-        #if COAMING_CURSOR
-        language.pick(
-            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。このアプリは auth.json を読みません。問い合わせる CLI が自分のログインファイルを更新することがあります。Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb（読み取り専用）、無ければ Keychain の cursor-access-token。",
-            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. This app does not read auth.json. The CLI may update its own login file. Cursor: ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb (read-only), or the Keychain item cursor-access-token."
-        )
-        #else
-        language.pick(
-            ja: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json（Claude Desktop が書く使用率）と ~/Library/Application Support/Agent Coaming/claude-rate-limits.json（Claude Code の statusline が書く使用率）。新しい方を使います。Codex: インストール済みの codex コマンドに使用量を聞きます。このアプリは auth.json を読みません。問い合わせる CLI が自分のログインファイルを更新することがあります。",
-            en: "Claude: ~/Library/Application Support/Claude/plan-usage-history.json (usage written by Claude Desktop) and ~/Library/Application Support/Agent Coaming/claude-rate-limits.json (usage written by the Claude Code status line), whichever is newer. Codex: asks the installed codex command for usage. This app does not read auth.json. The CLI may update its own login file."
-        )
-        #endif
+    /// Each path and sentence is its own line, so a path stays readable when the window wraps text.
+    private var reads: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(language.pick(ja: "読むもの", en: "What it reads"))
+                .font(.caption.weight(.semibold))
+            VStack(alignment: .leading, spacing: 10) {
+                readSource("Claude", lines: [
+                    "~/Library/Application Support/Claude/plan-usage-history.json",
+                    language.pick(ja: "Claude Desktop が書く使用率", en: "Usage written by Claude Desktop"),
+                    "~/Library/Application Support/Agent Coaming/claude-rate-limits.json",
+                    language.pick(ja: "Claude Code の statusline が書く使用率", en: "Usage written by the Claude Code status line"),
+                    language.pick(ja: "新しい方を使います。", en: "Whichever is newer is used."),
+                ])
+                readSource("Codex", lines: [
+                    language.pick(
+                        ja: "インストール済みの codex コマンドに使用量を聞きます。",
+                        en: "Asks the installed codex command for usage."
+                    ),
+                    language.pick(ja: "このアプリは auth.json を読みません。", en: "This app does not read auth.json."),
+                    language.pick(
+                        ja: "問い合わせる CLI が自分のログインファイルを更新することがあります。",
+                        en: "The CLI may update its own login file."
+                    ),
+                ])
+                // Cursor is compiled only when COAMING_CURSOR=1. See ProviderID.included.
+                #if COAMING_CURSOR
+                readSource("Cursor", lines: [
+                    "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb",
+                    language.pick(
+                        ja: "読み取り専用。無ければ Keychain の cursor-access-token。",
+                        en: "Read-only, or the Keychain item cursor-access-token."
+                    ),
+                ])
+                #endif
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func readSource(_ title: String, lines: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.caption.weight(.medium))
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                Text(line)
+                    .font(line.hasPrefix("~/") ? .caption.monospaced() : .caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var networkText: String {

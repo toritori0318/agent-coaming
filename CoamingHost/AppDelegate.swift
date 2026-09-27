@@ -41,11 +41,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingController(rootView: SettingsView(model: model))
         let window = NSWindow(contentViewController: hosting)
         window.title = "Agent Coaming"
+        // The visible header is SettingsTitle in the toolbar. This title stays for the Window menu.
+        window.titleVisibility = .hidden
+        window.toolbarStyle = .unifiedCompact
+        window.titlebarSeparatorStyle = .line
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.setContentSize(NSSize(width: 560, height: 680))
         window.isReleasedWhenClosed = false
         window.center()
         window.makeKeyAndOrderFront(nil)
+        // SwiftUI installs the toolbar while the window appears, and may reset these.
+        window.toolbarStyle = .unifiedCompact
+        window.titleVisibility = .hidden
+        window.titlebarSeparatorStyle = .line
         self.window = window
     }
 
