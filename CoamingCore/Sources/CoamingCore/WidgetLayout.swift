@@ -30,9 +30,9 @@ public struct MediumWidgetRow: Sendable, Equatable, Identifiable {
 
 public enum WidgetLayout {
     #if COAMING_CURSOR
-    public static let emptyMessage = "Sign in to Claude Code, Codex, or Cursor"
+    public static let emptyMessage = "Sign in to Claude, Codex, or Cursor"
     #else
-    public static let emptyMessage = "Sign in to Claude Code or Codex"
+    public static let emptyMessage = "Sign in to Claude or Codex"
     #endif
 
     public static func small(snapshot: Snapshot, now: Date) -> SmallWidgetModel {

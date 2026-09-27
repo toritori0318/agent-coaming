@@ -23,8 +23,8 @@ This app does not use Claude's OAuth token. Anthropic reserves that token for Cl
 Cursor does not publish a personal usage API. Reading the local session and polling `cursor.com` sits closest to Cursor's rules against automated access, so the default build leaves Cursor out. `COAMING_CURSOR=1` compiles that path in. Building it is your own decision. The picture above is the default build, with Claude and Codex only.
 
 - **If Claude Desktop (including Cowork) is running, the 5-hour and 7-day percents appear with no extra setup** (updated about every 15 minutes; no reset time)
-- Setting the Claude Code status line adds reset times while a session is running
-- While neither is running, the last value stays on screen, dimmed, as "n ago"
+- With Claude Code only, the status line below is what makes the percents and the reset times appear
+- While neither is updating, the last value stays on screen, dimmed, as "n ago"
 
 `plan-usage-history.json` is not a published format, so a Desktop update can make it unreadable. The status line path still works on its own.
 
@@ -48,9 +48,13 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 
 `XXXXXXXXXX` is the Team ID shown in Xcode → Settings → Accounts. This installs `~/Applications/Agent Coaming.app` and copies the Claude status line script to `~/Library/Application Support/Agent Coaming/claude-statusline.sh`.
 
-### Claude Code status line (optional, for reset times)
+### Claude Code status line (optional, for the CLI only, to show usage and reset times)
 
-Add a status line to `~/.claude/settings.json`.
+Claude Desktop writes the used percents about every 15 minutes, without this setting. Those percents have no reset time.
+
+With Claude Code and no Claude Desktop, this setting is what makes usage appear. This app does not ask Claude for usage itself.
+
+**Install the script** on the settings screen copies `claude-statusline.sh` to `~/Library/Application Support/Agent Coaming/`. `make install` copies it to the same place. Then add this to `~/.claude/settings.json`.
 
 ```json
 {
@@ -68,6 +72,8 @@ If you already have a status line, pass that command as an argument and its disp
 ```
 
 `command` is executed by a shell, so escape each space in the path with `\` (`\\` inside JSON).
+
+Claude Code writes the usage file the next time it runs the status line and `rate_limits` includes a window. Placing the script does not create the file by itself.
 
 The script writes only `five_hour` and `seven_day` from `rate_limits` to `~/Library/Application Support/Agent Coaming/claude-rate-limits.json`. It does not write conversation text or paths.
 
