@@ -1,0 +1,10 @@
+{
+  "OPENAI_API_KEY": null,
+  "tokens": {
+    "id_token": "id",
+    "access_token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjE3NTkwMDAwMDB9.sig",
+    "refresh_token": "DO_NOT_KEEP_9f3a",
+    "account_id": "acc_snake"
+  },
+  "last_refresh": "2026-09-20T03:00:00Z"
+}

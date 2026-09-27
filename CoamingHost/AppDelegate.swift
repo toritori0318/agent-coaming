@@ -1,0 +1,58 @@
+import AppKit
+import CoreServices
+import SwiftUI
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let model = AppModel()
+    private var window: NSWindow?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        model.status.onClick = { [weak self] in
+            self?.showSettings()
+        }
+        model.overlay.onClick = { [weak self] in
+            self?.showSettings()
+        }
+        let login = Self.launchedAsLoginItem()
+        Task {
+            if !login {
+                showSettings()
+            }
+            await model.start()
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettings()
+        return true
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    func showSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+        if let window {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+        let hosting = NSHostingController(rootView: SettingsView(model: model))
+        let window = NSWindow(contentViewController: hosting)
+        window.title = "Agent Coaming"
+        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.setContentSize(NSSize(width: 560, height: 680))
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        self.window = window
+    }
+
+    private static func launchedAsLoginItem() -> Bool {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent else { return false }
+        if event.eventID != AEEventID(kAEOpenApplication) { return false }
+        guard let descriptor = event.paramDescriptor(forKeyword: AEKeyword(keyAEPropData)) else { return false }
+        return descriptor.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
+    }
+}

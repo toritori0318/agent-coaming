@@ -1,0 +1,13 @@
+# Private design notes. Not part of the public repo.
+internal/
+
+# Personal Team ID. Written by make generate from COAMING_TEAM_ID.
+Config.xcconfig
+
+# Build products. They contain local paths and the signed Team ID.
+build/
+CoamingCore/.build/
+
+.DS_Store
+xcuserdata/
+*.xcuserstate

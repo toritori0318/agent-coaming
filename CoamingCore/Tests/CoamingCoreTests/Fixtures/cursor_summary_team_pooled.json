@@ -1,0 +1,7 @@
+{
+  "billingCycleEnd": "2026-10-03T00:00:00.000Z",
+  "membershipType": "enterprise",
+  "isUnlimited": false,
+  "individualUsage": { "plan": null, "overall": null },
+  "teamUsage": { "pooled": { "used": 100, "limit": 1000 } }
+}

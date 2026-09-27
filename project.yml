@@ -1,0 +1,73 @@
+name: AgentCoaming
+options:
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  SWIFT_VERSION: "6.0"
+  MACOSX_DEPLOYMENT_TARGET: "15.0"
+  SWIFT_STRICT_CONCURRENCY: complete
+  MARKETING_VERSION: "1.0.0"
+  CURRENT_PROJECT_VERSION: "1"
+  CODE_SIGN_STYLE: Automatic
+  CODE_SIGN_IDENTITY: "Apple Development"
+  DEVELOPMENT_TEAM: $(COAMING_TEAM_ID)
+  ENABLE_HARDENED_RUNTIME: YES
+configFiles:
+  Debug: Config.xcconfig
+  Release: Config.xcconfig
+packages:
+  CoamingCore:
+    path: CoamingCore
+targets:
+  CoamingHost:
+    type: application
+    platform: macOS
+    sources:
+      - path: CoamingHost
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: io.github.toritori0318.agentcoaming
+      PRODUCT_NAME: "Agent Coaming"
+      INFOPLIST_FILE: CoamingHost/Info.plist
+      GENERATE_INFOPLIST_FILE: NO
+      CODE_SIGN_ENTITLEMENTS: CoamingHost/CoamingHost.entitlements
+      ENABLE_APP_SANDBOX: NO
+      ENABLE_HARDENED_RUNTIME: YES
+      LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/../Frameworks
+    dependencies:
+      - package: CoamingCore
+        product: CoamingCore
+      - target: CoamingWidget
+        embed: true
+  CoamingWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: CoamingWidget
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: io.github.toritori0318.agentcoaming.widget
+      PRODUCT_NAME: CoamingWidget
+      INFOPLIST_FILE: CoamingWidget/Info.plist
+      GENERATE_INFOPLIST_FILE: NO
+      CODE_SIGN_ENTITLEMENTS: CoamingWidget/CoamingWidget.entitlements
+      ENABLE_APP_SANDBOX: YES
+      ENABLE_HARDENED_RUNTIME: YES
+      SKIP_INSTALL: YES
+      LD_RUNPATH_SEARCH_PATHS: $(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks
+    dependencies:
+      - package: CoamingCore
+        product: CoamingCore
+schemes:
+  CoamingHost:
+    build:
+      targets:
+        CoamingHost: all
+        CoamingWidget: all
+    run:
+      config: Debug

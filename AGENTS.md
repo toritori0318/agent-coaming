@@ -1,0 +1,61 @@
+# AGENTS.md
+
+Instructions for coding agents in this repository.
+
+## Product
+
+The display name is Agent Coaming. The app is `Agent Coaming.app`, bundle ID `io.github.toritori0318.agentcoaming`, App Group `group.agentcoaming`, support directory `~/Library/Application Support/Agent Coaming`. Read-only macOS indicator for Claude Code, Codex CLI, and Cursor usage. It shows the used fraction and the reset time. It does not refresh tokens and does not write credentials.
+
+The daily UI is the corner overlay (bars, no numbers). The menu bar item is opt-in. The Notification Center widget reads a snapshot and has no network entitlement.
+
+## Language
+
+Code, comments, CLI output, `README.md`, and this file are English. Settings copy is bilingual through `AppLanguage.pick(ja:en:)`. When you change a settings string, update both languages. Do not add Japanese comments.
+
+## Do not commit
+
+- `internal/` — private design notes
+- `Config.xcconfig` — personal Team ID, written by `make generate`
+- `build/` and `CoamingCore/.build/` — local paths and a signed Team ID
+
+## Boundaries
+
+`scripts/check.py` fails the build if these are violated. Do not weaken the check to make a change pass.
+
+- The only network hosts are `chatgpt.com` and `cursor.com` (`Constants.allowedHosts`). Claude usage comes from local files. Do not call Anthropic.
+- These substrings are forbidden in implementation files (fixtures, `internal/`, and `check.py` itself are skipped): `oauth/token`, `oauth/usage`, `api.anthropic.com`, `api2.cursor.sh`, `auth.openai.com`, `platform.claude.com`, `console.anthropic.com`, `SQLITE_OPEN_READWRITE`, `SQLITE_OPEN_CREATE`, `sqlite3_exec`, `SecItemAdd`, `SecItemUpdate`, `SecItemDelete`.
+- The check collapses `"a" + "b"` and adjacent string literals, so splitting a forbidden word does not hide it.
+- `refresh_token` / `refreshToken` may appear only on a `//` comment line that contains `do not read`.
+- `CoamingWidget.entitlements` must not contain `com.apple.security.network.client`.
+- Credentials are read-only. Do not refresh tokens. Do not write `auth.json`, `state.vscdb`, or the Keychain.
+- Cursor's database opens with `SQLITE_OPEN_READONLY`. The `immutable=1` URI is only a fallback when open or prepare returns `SQLITE_CANTOPEN` and both `-wal` and `-shm` are absent.
+- `snapshot.json` in the App Group must not contain tokens, account IDs, email, or JWTs. Tokens stay in the host process.
+- Thresholds and intervals live in `Constants.swift`. Do not scatter new magic numbers.
+
+## Where usage comes from
+
+Claude uses the newer of two local files:
+
+1. Claude Desktop's `plan-usage-history.json` (used percent only, about every 15 minutes). The format is unpublished. If it fails to parse, return nil and keep the other file.
+2. `claude-rate-limits.json`, written by `scripts/claude-statusline.sh` from the `rate_limits` object Claude Code passes to its status line. The script keeps only `five_hour` and `seven_day` `used_percentage` and `resets_at`.
+
+Codex reads the access token in `$CODEX_HOME/auth.json` (or `~/.codex/auth.json`) and calls `https://chatgpt.com/backend-api/wham/usage`. Do not parse `refresh_token`. A non-empty API key and no tokens is `unsupported`.
+
+Cursor reads `state.vscdb` or Keychain item `cursor-access-token`, then calls `https://cursor.com/api/usage-summary`. The billing cycle is monthly. The overlay shows that bar as `1mo`, not under `5h` or `1w`, and not as `1m` (that reads as one minute). `totalPercentUsed` divided by 100 is the fraction: `0.36` means 0.36%, not 36%.
+
+## UI
+
+- Overlay bars: white below 75%, orange at or above 75%, red at or above 90%. A fraction that rounds to 0% has no fill.
+- Claude and Codex show `5h` and `1w`. Cursor shows `1mo` only.
+- Settings may show percents. The overlay does not.
+- The host polls about every 5 minutes. A manual refresh is ignored when the last attempt was under 60 seconds. A 429 backs off, up to 60 minutes.
+
+## Build
+
+```sh
+COAMING_TEAM_ID=XXXXXXXXXX make build   # writes Config.xcconfig, then xcodebuild
+make test                           # swift test --package-path CoamingCore
+make check                          # test, then python3 scripts/check.py
+```
+
+`project.yml` is the XcodeGen source. `DEVELOPMENT_TEAM` is `$(COAMING_TEAM_ID)`. Swift 6, macOS 15, strict concurrency. The host is not sandboxed. The widget extension is sandboxed and has no network client entitlement.

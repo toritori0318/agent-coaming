@@ -1,0 +1,8 @@
+{
+  "isUnlimited": false,
+  "membershipType": "free",
+  "individualUsage": {
+    "plan": { "enabled": false, "used": 0, "limit": null, "totalPercentUsed": null }
+  },
+  "teamUsage": { "pooled": { "used": 0, "limit": 0 } }
+}

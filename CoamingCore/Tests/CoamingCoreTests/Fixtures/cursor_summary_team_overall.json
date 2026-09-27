@@ -1,0 +1,11 @@
+{
+  "billingCycleEnd": "2026-10-03T00:00:00.000Z",
+  "membershipType": "enterprise",
+  "isUnlimited": false,
+  "individualUsage": {
+    "plan": null,
+    "onDemand": { "enabled": false },
+    "overall": { "enabled": true, "used": 7384, "limit": 10000 }
+  },
+  "teamUsage": null
+}
