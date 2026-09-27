@@ -139,16 +139,7 @@ private struct ProviderSettingsSection: View {
     private func detail(_ language: AppLanguage) -> some View {
         VStack(alignment: .leading, spacing: 10) {
                 if id == .claude, model.snapshot.provider(.claude)?.status != .ok {
-                    Text(language.pick(
-                        ja: "Claude Desktop を起動していれば、15 分ごとに使用率が出ます。リセット時刻まで出すには Claude Code の settings.json に statusLine を設定します。既存の statusline は引数に付けると残せます。",
-                        en: "With Claude Desktop running, usage appears every 15 minutes. To also show reset times, set statusLine in Claude Code's settings.json. Pass an existing status line command as the argument to keep it."
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    Text(#""statusLine": {"type": "command", "command": "~/Library/Application\\ Support/Agent\\ Coaming/claude-statusline.sh"}"#)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
+                    ClaudeResetSetup(language: language)
                 }
 
                 if let provider = model.snapshot.provider(id) {
@@ -161,10 +152,122 @@ private struct ProviderSettingsSection: View {
 
     private var sectionTitle: String {
         switch id {
-        case .claude: "Claude Code"
+        case .claude: "Claude"
         case .codex: "Codex"
         case .cursor: "Cursor"
         }
+    }
+}
+
+private struct ClaudeResetSetup: View {
+    var language: AppLanguage
+    @State private var installed = ClaudeStatusLineScript.isInstalled
+    @State private var notice: String?
+
+    private var snippet: String {
+        #""statusLine": {"type": "command", "command": "~/Library/Application\\ Support/Agent\\ Coaming/claude-statusline.sh"}"#
+    }
+
+    var body: some View {
+        GroupBox(language.pick(ja: "Claude Code の statusline", en: "Claude Code status line")) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(language.pick(
+                    ja: "Claude Code から使用率とリセット時刻を受け取る設定です。Claude Desktop を使っていれば、使用率はこれなしで出ます。すでに statusline がある場合は、設定手順(github) を見てください。",
+                    en: "Receives used percents and reset times from Claude Code. With Claude Desktop, percents appear without this. If a status line is already set, see Setup steps (GitHub)."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 12) {
+                    Button(installed
+                        ? language.pick(ja: "スクリプトを置き直す", en: "Replace the script")
+                        : language.pick(ja: "スクリプトを置く", en: "Install the script")) {
+                        install()
+                    }
+                    Link(language.pick(ja: "設定手順(github)", en: "Setup steps (GitHub)"), destination: guideURL)
+                        .font(.caption)
+                }
+                if let notice {
+                    Text(notice)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if installed {
+                    Text(language.pick(
+                        ja: "Claude Code の settings.json に、次を追加してください。",
+                        en: "Add this to Claude Code's settings.json."
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    Text(snippet)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                    Button(language.pick(ja: "設定文をコピー", en: "Copy the setting")) {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(snippet, forType: .string)
+                    }
+                    Text(language.pick(
+                        ja: "次の更新、または「今すぐ更新」で反映されます。",
+                        en: "It appears on the next update, or when you choose Refresh now."
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(4)
+        }
+    }
+
+    /// Headings on main. GitHub's slug drops punctuation, including the Japanese parentheses.
+    private var guideURL: URL {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "github.com"
+        components.path = language.pick(
+            ja: "/toritori0318/agent-coaming/blob/main/README.ja.md",
+            en: "/toritori0318/agent-coaming/blob/main/README.md"
+        )
+        components.fragment = language.pick(
+            ja: "claude-code-の-statusline-を設定する任意cli-のみで使用率とリセット時刻を出したい場合",
+            en: "claude-code-status-line-optional-for-the-cli-only-to-show-usage-and-reset-times"
+        )
+        return components.url!
+    }
+
+    private func install() {
+        do {
+            try ClaudeStatusLineScript.install()
+            installed = true
+            notice = language.pick(ja: "置きました。", en: "Installed.")
+        } catch {
+            notice = language.pick(ja: "置けませんでした。", en: "Could not install it.")
+        }
+    }
+}
+
+private enum ClaudeStatusLineScript {
+    static var destination: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Agent Coaming/claude-statusline.sh")
+    }
+
+    static var isInstalled: Bool {
+        FileManager.default.isExecutableFile(atPath: destination.path)
+    }
+
+    static func install() throws {
+        guard let source = Bundle.main.url(forResource: "claude-statusline", withExtension: "sh") else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        let directory = destination.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: destination.path) {
+            try FileManager.default.removeItem(at: destination)
+        }
+        try FileManager.default.copyItem(at: source, to: destination)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destination.path)
     }
 }
 
@@ -278,20 +381,35 @@ private struct UsageStatusBars: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                if let plan = provider.planLabel, !plan.isEmpty {
-                    Text(plan).foregroundStyle(.secondary)
+            // Nothing is said while values are current. A note appears when bars are empty, old, or not fetched yet.
+            if provider.planLabel?.isEmpty == false || statusLabel != nil {
+                HStack(spacing: 8) {
+                    if let plan = provider.planLabel, !plan.isEmpty {
+                        Text(plan).foregroundStyle(.secondary)
+                    }
+                    if let statusLabel {
+                        Text(statusLabel).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer()
-                Text(statusLabel)
-                    .foregroundStyle(.secondary)
+                .font(.caption)
             }
-            .font(.caption)
-            if provider.id != .cursor {
-                barRow(title: "5h", window: window(.fiveHour))
+            Group {
+                if provider.id != .cursor {
+                    barRow(title: "5h", window: window(.fiveHour))
+                }
+                barRow(title: weekTitle, window: weekWindow)
             }
-            barRow(title: weekTitle, window: weekWindow)
+            .opacity(isOld ? 0.55 : 1)
         }
+    }
+
+    private var isOld: Bool {
+        WidgetLayout.isDimmed(provider, now: Date())
+    }
+
+    private var locale: Locale {
+        Locale(identifier: language == .ja ? "ja_JP" : "en_US")
     }
 
     private var weekTitle: String {
@@ -308,22 +426,22 @@ private struct UsageStatusBars: View {
         provider.windows.first { $0.kind == kind }
     }
 
-    private var statusLabel: String {
+    private var statusLabel: String? {
         switch provider.status {
-        case .ok where WidgetLayout.isDimmed(provider, now: Date()):
-            language.pick(ja: "前回の値", en: "Previous value")
-        case .ok:
-            language.pick(ja: "最新", en: "Up to date")
-        case .stale:
-            language.pick(ja: "前回の値", en: "Previous value")
+        case .ok where !isOld:
+            return nil
+        case .ok, .stale:
+            guard let fetched = provider.fetchedAt else { return missingFetchLabel }
+            let clock = formatResetClock(fetched, now: Date(), locale: locale)
+            return language.pick(ja: "\(clock) 時点の値", en: "as of \(clock)")
         case .needsLogin:
-            language.pick(ja: "再ログインが必要", en: "Sign in again")
+            return language.pick(ja: "再ログインが必要", en: "Sign in again")
         case .notInstalled:
-            language.pick(ja: "未インストール", en: "Not installed")
+            return language.pick(ja: "未インストール", en: "Not installed")
         case .unsupported:
-            language.pick(ja: "対象外", en: "Unsupported")
+            return language.pick(ja: "対象外", en: "Unsupported")
         case .notConfigured:
-            language.pick(ja: "未取得（Desktop 起動か statusline 設定）", en: "No data yet (run Desktop or set up status line)")
+            return language.pick(ja: "未取得（Desktop 起動か statusline 設定）", en: "No data yet (run Desktop or set up status line)")
         }
     }
 
@@ -336,6 +454,10 @@ private struct UsageStatusBars: View {
             Text(valueText(window))
                 .font(.caption.monospacedDigit())
                 .frame(width: 48, alignment: .trailing)
+            Text(resetText(window))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 124, alignment: .trailing)
         }
     }
 
@@ -361,5 +483,19 @@ private struct UsageStatusBars: View {
         guard let window else { return "—" }
         if window.label == "∞" { return "∞" }
         return formatUsedPercent(window.usedFraction)
+    }
+
+    /// Same split as the widget: the first snapshot is waiting, and any other fetch with no prior value failed.
+    private var missingFetchLabel: String {
+        if provider.staleReason == "waiting" {
+            return language.pick(ja: "読み込み中", en: "Loading")
+        }
+        return language.pick(ja: "取得できませんでした", en: "Could not fetch")
+    }
+
+    private func resetText(_ window: UsageWindow?) -> String {
+        guard let resets = window?.resetsAt, resets > Date() else { return "" }
+        let clock = formatResetClock(resets, now: Date(), locale: locale)
+        return language.pick(ja: "\(clock) まで", en: "until \(clock)")
     }
 }

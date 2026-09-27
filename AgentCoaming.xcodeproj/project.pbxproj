@@ -12,6 +12,7 @@
 		43082287B2769E786AB38892 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942F271320DE2D0C2F6146E8 /* AppDelegate.swift */; };
 		7289488F8E98B7F03E48C0E7 /* CoamingWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6B2DA18855589A67CD8472DB /* CoamingWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		78FF6036E336B30D23E980B3 /* CoamingWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10E13D1B58B24714BBCAC8B /* CoamingWidgetView.swift */; };
+		A34C523390FCD5C91CE94D2D /* claude-statusline.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0B9E1FE1447745F5D2F0B3A2 /* claude-statusline.sh */; };
 		A85049DFC0C0C684E59C18B5 /* CoamingCore in Frameworks */ = {isa = PBXBuildFile; productRef = B2F031F53D36D7FE363E0CA0 /* CoamingCore */; };
 		C50F404A5D4835B60744056B /* CoamingWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE15DCD01CFA096D2113861 /* CoamingWidget.swift */; };
 		E1E8A856ED1204336282C57C /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D87F70D06CAA65AD22E9D9E /* StatusItemController.swift */; };
@@ -48,6 +49,7 @@
 /* Begin PBXFileReference section */
 		071E37C7F38324D1EDFFAE58 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		0A1A689F6D81B76AAE35DB1E /* CoamingHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingHostApp.swift; sourceTree = "<group>"; };
+		0B9E1FE1447745F5D2F0B3A2 /* claude-statusline.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "claude-statusline.sh"; sourceTree = "<group>"; };
 		6B2DA18855589A67CD8472DB /* CoamingWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CoamingWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D5AFE8BA54155B9252A76B4 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		6DA4D0A5881447FD2C3CEEF1 /* CoamingCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CoamingCore; path = CoamingCore; sourceTree = SOURCE_ROOT; };
@@ -81,6 +83,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		09173B559A1E44314DBE7332 /* scripts */ = {
+			isa = PBXGroup;
+			children = (
+				0B9E1FE1447745F5D2F0B3A2 /* claude-statusline.sh */,
+			);
+			path = scripts;
+			sourceTree = "<group>";
+		};
 		7065BD4B16CA35AD329BF299 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -127,6 +137,7 @@
 				845CA983D8C6D4893FFD0C5E /* CoamingHost */,
 				A482DA9C6E2A1DAE00B8C2A6 /* CoamingWidget */,
 				724A88A37A0CD2EE3F798898 /* Packages */,
+				09173B559A1E44314DBE7332 /* scripts */,
 				7065BD4B16CA35AD329BF299 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -166,6 +177,7 @@
 			buildConfigurationList = 1CE019DB2BED66DAEFEC972F /* Build configuration list for PBXNativeTarget "CoamingHost" */;
 			buildPhases = (
 				66C85FA28317F412936E6A47 /* Sources */,
+				A59C7CA17A1BDB919F30E9C9 /* Resources */,
 				2CF1B1189F9A4CC842147C48 /* Frameworks */,
 				587965E278F86A8AB52B7729 /* Embed Foundation Extensions */,
 			);
@@ -223,6 +235,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A59C7CA17A1BDB919F30E9C9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A34C523390FCD5C91CE94D2D /* claude-statusline.sh in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		66C85FA28317F412936E6A47 /* Sources */ = {

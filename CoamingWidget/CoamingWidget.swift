@@ -14,9 +14,9 @@ struct CoamingWidget: Widget {
         }
         .configurationDisplayName("Agent Coaming")
         #if COAMING_CURSOR
-        .description("Usage for Claude Code, Codex, and Cursor")
+        .description("Usage for Claude, Codex, and Cursor")
         #else
-        .description("Usage for Claude Code and Codex")
+        .description("Usage for Claude and Codex")
         #endif
         .supportedFamilies([.systemSmall, .systemMedium])
     }

@@ -23,8 +23,8 @@ Claude の OAuth トークンは Anthropic が Claude Code とネイティブア
 Cursor には個人向けの使用量 API がありません。手元のログイン情報を読んで `cursor.com` に問い合わせる形は、自動アクセスを禁じる Cursor の規約にいちばん近いので、既定のビルドからは外しています。`COAMING_CURSOR=1` でその経路をコンパイルできます。入れるかどうかはビルドする人の判断です。上の画像は既定のビルドで、Claude と Codex だけです。
 
 - **Claude Desktop（Cowork 含む）を起動していれば、設定なしで 5 時間 / 7 日の使用率が出ます**（15 分ごとに更新。リセット時刻は出ません）
-- Claude Code の statusline を設定すると、セッション中はリセット時刻つきで更新されます
-- どちらも動いていない間は更新されず、「n分前の値」として薄く表示されます
+- Claude Code だけの場合は、下の statusline を設定すると使用率とリセット時刻が出ます
+- どちらも更新していない間は、「n分前の値」として薄く表示されます
 
 Desktop の `plan-usage-history.json` は公開された形式ではないので、Desktop の更新で読めなくなる可能性があります。その場合は statusline 側だけで動きます。
 
@@ -48,9 +48,13 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 
 `XXXXXXXXXX` は Xcode → Settings → Accounts に出る Team ID です。`~/Applications/Agent Coaming.app` に置き、Claude 用の statusline スクリプトを `~/Library/Application Support/Agent Coaming/claude-statusline.sh` にコピーします。
 
-### Claude Code の statusline を設定する（任意。リセット時刻を出したい場合）
+### Claude Code の statusline を設定する（任意。CLI のみで使用率とリセット時刻を出したい場合）
 
-`~/.claude/settings.json` に statusline を設定します。
+Claude Desktop は、この設定なしで約 15 分ごとに使用率を書きます。リセット時刻は含まれません。
+
+Claude Code だけで Desktop を使っていない場合は、この設定がないと使用率も出ません。このアプリは Claude に使用量を問い合わせません。
+
+設定画面の「スクリプトを置く」で、`claude-statusline.sh` を `~/Library/Application Support/Agent Coaming/` にコピーできます。`make install` も同じ場所にコピーします。そのあと `~/.claude/settings.json` に次を追加します。
 
 ```json
 {
@@ -68,6 +72,8 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 ```
 
 `command` はシェルで実行されるため、パス中のスペースはそれぞれ `\` でエスケープします（JSON の中なので `\\` と書きます）。
+
+使用率のファイルは、Claude Code が statusline を実行し、`rate_limits` に枠があるときに作られます。スクリプトを置いただけでは作られません。
 
 スクリプトは `rate_limits` の `five_hour` / `seven_day` だけを `~/Library/Application Support/Agent Coaming/claude-rate-limits.json` に書きます。会話内容やパスは書きません。
 
