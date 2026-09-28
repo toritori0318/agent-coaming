@@ -24,6 +24,7 @@ final class StatusItemController: NSObject {
         let highest = snapshot.providers
             .filter { enabled.contains($0.id) && $0.status != .notInstalled }
             .flatMap(\.windows)
+            .filter { $0.kind == .fiveHour }
             .map(\.usedFraction)
             .max()
         item?.button?.title = highest.map(formatUsedPercent) ?? "—"

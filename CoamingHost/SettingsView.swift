@@ -333,8 +333,8 @@ private struct UsageGuide: View {
                 block(
                     language.pick(ja: "メニューバー", en: "Menu bar"),
                     language.pick(
-                        ja: "有効なサービスの中で、いちばん高い使用率だけ出します。",
-                        en: "Shows only the highest usage among enabled services."
+                        ja: "有効なサービスの 5h のうち、いちばん高い使用率だけ出します。",
+                        en: "Shows only the highest 5h usage among enabled services."
                     )
                 )
                 reads
