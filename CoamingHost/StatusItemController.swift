@@ -21,13 +21,7 @@ final class StatusItemController: NSObject {
     }
 
     func update(_ snapshot: Snapshot, enabled: Set<ProviderID>) {
-        let highest = snapshot.providers
-            .filter { enabled.contains($0.id) && $0.status != .notInstalled }
-            .flatMap(\.windows)
-            .filter { $0.kind == .fiveHour }
-            .map(\.usedFraction)
-            .max()
-        item?.button?.title = highest.map(formatUsedPercent) ?? "—"
+        item?.button?.title = MenuBarReading.title(snapshot: snapshot, enabled: enabled)
     }
 
     @objc private func clicked() {
