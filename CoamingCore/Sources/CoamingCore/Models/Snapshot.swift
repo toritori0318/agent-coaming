@@ -82,6 +82,15 @@ public struct ProviderSnapshot: Codable, Sendable, Equatable {
         self.staleReason = staleReason
     }
 
+    /// Claude Desktop, including Cowork, writes used percents without reset times and leaves status `.ok`.
+    /// The status line setup stays useful until every 5-hour and weekly window has a reset time.
+    /// An `.ok` snapshot with no windows means every window passed its reset, and only status line
+    /// records carry resets, so it does not ask for the setup again.
+    public var needsClaudeResetSetup: Bool {
+        guard status == .ok else { return true }
+        return windows.contains { ($0.kind == .fiveHour || $0.kind == .weekly) && $0.resetsAt == nil }
+    }
+
     static func make(
         _ id: ProviderID,
         status: ProviderStatus,

@@ -159,3 +159,32 @@ final class ClaudeDesktopUsageTests: XCTestCase {
         guard case .notConfigured = reader.read() else { return XCTFail("expected notConfigured") }
     }
 }
+
+final class ClaudeResetSetupTests: XCTestCase {
+    private func claude(_ status: ProviderStatus, _ windows: [UsageWindow]) -> ProviderSnapshot {
+        ProviderSnapshot(id: .claude, displayName: "Claude", status: status, planLabel: nil, windows: windows, fetchedAt: nil, staleReason: nil)
+    }
+
+    func testWindowWithoutResetTimeNeedsSetup() {
+        let percentOnly = UsageWindow(kind: .fiveHour, label: "5h", usedFraction: 0.4, resetsAt: nil)
+        XCTAssertTrue(claude(.ok, [percentOnly]).needsClaudeResetSetup)
+    }
+
+    func testBothResetTimesHideSetup() {
+        let reset = Date(timeIntervalSince1970: 1_800_000_000)
+        let windows = [
+            UsageWindow(kind: .fiveHour, label: "5h", usedFraction: 0.4, resetsAt: reset),
+            UsageWindow(kind: .weekly, label: "Weekly", usedFraction: 0.2, resetsAt: reset),
+        ]
+        XCTAssertFalse(claude(.ok, windows).needsClaudeResetSetup)
+    }
+
+    func testStatusOtherThanOkNeedsSetup() {
+        XCTAssertTrue(claude(.notConfigured, []).needsClaudeResetSetup)
+        XCTAssertTrue(claude(.stale, []).needsClaudeResetSetup)
+    }
+
+    func testEveryWindowPastItsResetHidesSetup() {
+        XCTAssertFalse(claude(.ok, []).needsClaudeResetSetup)
+    }
+}

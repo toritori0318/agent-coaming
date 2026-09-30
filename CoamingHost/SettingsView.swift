@@ -182,7 +182,7 @@ private struct ProviderSettingsSection: View {
 
     private func detail(_ language: AppLanguage) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-                if id == .claude, showsClaudeSetup {
+                if id == .claude, model.snapshot.provider(.claude)?.needsClaudeResetSetup ?? true {
                     ClaudeResetSetup(language: language)
                 }
 
@@ -192,15 +192,6 @@ private struct ProviderSettingsSection: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(4)
-    }
-
-    /// Cowork and Claude Desktop publish used percents without reset times, which leaves status `.ok`
-    /// and used to hide this setup. Show it until a status line has filled in the reset times.
-    private var showsClaudeSetup: Bool {
-        guard let provider = model.snapshot.provider(.claude) else { return true }
-        if provider.status != .ok { return true }
-        let limits = provider.windows.filter { $0.kind == .fiveHour || $0.kind == .weekly }
-        return limits.isEmpty || limits.contains { $0.resetsAt == nil }
     }
 
     private var sectionTitle: String {
@@ -258,10 +249,17 @@ private struct ClaudeResetSetup: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(snippet, forType: .string)
                 }
-                Text(language.pick(
-                    ja: "スクリプトを置いたあと、次の更新、または「今すぐ更新」で反映されます。",
-                    en: "After the script is installed, it appears on the next update, or when you choose Refresh now."
-                ))
+                // Copy waits for the script: a settings.json entry that points at a missing script writes nothing.
+                .disabled(!installed)
+                Text(installed
+                    ? language.pick(
+                        ja: "次の更新、または「今すぐ更新」で反映されます。",
+                        en: "It appears on the next update, or when you choose Refresh now."
+                    )
+                    : language.pick(
+                        ja: "先にスクリプトを置くと、設定文をコピーできます。",
+                        en: "Install the script first, then copy the setting."
+                    ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
