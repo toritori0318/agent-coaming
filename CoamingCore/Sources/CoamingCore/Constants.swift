@@ -6,6 +6,8 @@ public enum Constants {
     public static let requestTimeout: TimeInterval = 15
     /// Refresh within 15 seconds of wake. Wait briefly for the network to return.
     public static let wakeRefreshDelay: TimeInterval = 3
+    /// Wait for the menu bar to settle after a display is connected or removed, then recreate the status item.
+    public static let menuBarReinstallDelay: TimeInterval = 0.3
     public static let expiryLeeway: TimeInterval = 60
     public static let manualRefreshMinInterval: TimeInterval = 60
     public static let retryAfterDefault: TimeInterval = 30 * 60
