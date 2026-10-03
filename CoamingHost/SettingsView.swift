@@ -61,14 +61,29 @@ struct SettingsView: View {
                             get: { model.menuBar },
                             set: { model.setMenuBar($0) }
                         ))
-                        Toggle(language.pick(ja: "90% 以上で通知", en: "Notify at 90% or more"), isOn: Binding(
+                        Toggle(language.pick(ja: "通知", en: "Notify"), isOn: Binding(
                             get: { model.notifyOnLimit },
                             set: { model.setNotifyOnLimit($0) }
                         ))
-                        Text(notifyCaption(language))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        if model.notifyOnLimit {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 16) {
+                                    notifyOption("75%", get: { model.notifyAt75 }, set: { model.setNotifyAt75($0) })
+                                    notifyOption("90%", get: { model.notifyAt90 }, set: { model.setNotifyAt90($0) })
+                                }
+                                HStack(spacing: 16) {
+                                    notifyOption("5h", get: { model.notifyFiveHour }, set: { model.setNotifyFiveHour($0) })
+                                    notifyOption("1w", get: { model.notifyWeekly }, set: { model.setNotifyWeekly($0) })
+                                    #if COAMING_CURSOR
+                                    notifyOption("1mo", get: { model.notifyMonth }, set: { model.setNotifyMonth($0) })
+                                    #endif
+                                }
+                            }
+                            Text(notifyCaption(language))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         if let notice = model.launchAtLoginNotice {
                             Text(noticeText(notice, language: language))
                                 .font(.caption)
@@ -137,18 +152,16 @@ struct SettingsView: View {
         .background(.bar)
     }
 
+    private func notifyOption(_ title: String, get: @escaping () -> Bool, set: @escaping (Bool) -> Void) -> some View {
+        Toggle(title, isOn: Binding(get: get, set: set))
+            .toggleStyle(.checkbox)
+    }
+
     private func notifyCaption(_ language: AppLanguage) -> String {
-        #if COAMING_CURSOR
         language.pick(
-            ja: "5h、1w、1mo が 90% 以上になったときに、一度通知します。下回ったあと再び超えると、もう一度通知します。",
-            en: "Notifies once when 5h, 1w, or 1mo reaches 90% or more. It notifies again after usage falls below that and reaches it again."
+            ja: "下から超えた瞬間に、選んだ線で一度ずつ通知します。下回ったあと再び超えると、もう一度通知します。",
+            en: "Notifies once at each selected line, when usage crosses it from below. After it falls below that line and crosses it again, it notifies once more."
         )
-        #else
-        language.pick(
-            ja: "5h または 1w が 90% 以上になったときに、一度通知します。下回ったあと再び超えると、もう一度通知します。",
-            en: "Notifies once when 5h or 1w reaches 90% or more. It notifies again after usage falls below that and reaches it again."
-        )
-        #endif
     }
 
     private func noticeText(_ notice: LoginItemNotice, language: AppLanguage) -> String {

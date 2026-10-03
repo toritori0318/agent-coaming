@@ -2,27 +2,121 @@ import XCTest
 @testable import CoamingCore
 
 final class LimitAlertsTests: XCTestCase {
-    func testNotifiesWhenUsageReachesTheRedThreshold() {
-        let over = snapshot(claude: 0.90, status: .ok)
-        let first = LimitAlerts.evaluate(snapshot: over, enabled: [.claude], alreadyNotified: [])
-        XCTAssertEqual(first.crossings.map(\.key), ["claude.fiveHour"])
-        XCTAssertEqual(first.crossings.first?.windowName, "5h")
-        XCTAssertEqual(first.crossings.first?.percentText, "90%")
-        XCTAssertEqual(first.active, ["claude.fiveHour"])
+    private let both = Set([LimitAlerts.orange, LimitAlerts.red])
+    private let fiveHour: Set<WindowKind> = [.fiveHour]
 
-        let again = LimitAlerts.evaluate(snapshot: over, enabled: [.claude], alreadyNotified: first.active)
+    func testJumpPastBothLinesNotifiesEachOnce() {
+        let over = snapshot(claude: 0.95, status: .ok)
+        let first = LimitAlerts.evaluate(
+            snapshot: over, enabled: [.claude], alreadyNotified: [], notifyLevels: both, notifyKinds: fiveHour
+        )
+        XCTAssertEqual(first.crossings.map(\.key), ["claude.fiveHour.75", "claude.fiveHour.90"])
+        XCTAssertEqual(first.crossings.map(\.thresholdText), ["75%", "90%"])
+        XCTAssertEqual(first.active, ["claude.fiveHour.75", "claude.fiveHour.90"])
+
+        let again = LimitAlerts.evaluate(
+            snapshot: over, enabled: [.claude], alreadyNotified: first.active, notifyLevels: both, notifyKinds: fiveHour
+        )
         XCTAssertTrue(again.crossings.isEmpty)
-        XCTAssertEqual(again.active, ["claude.fiveHour"])
     }
 
-    func testNotifiesAgainAfterUsageFallsBelowTheThreshold() {
-        let under = snapshot(claude: 0.50, status: .ok)
-        let cleared = LimitAlerts.evaluate(snapshot: under, enabled: [.claude], alreadyNotified: ["claude.fiveHour"])
+    func testExactThresholdsNotify() {
+        let at75 = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.75, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: [],
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(at75.crossings.map(\.key), ["claude.fiveHour.75"])
+
+        let at90 = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.90, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: at75.active,
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(at90.crossings.map(\.key), ["claude.fiveHour.90"])
+    }
+
+    func testCrossing90FromBetweenTheLinesNotifiesOnly90() {
+        let over = snapshot(claude: 0.91, status: .ok)
+        let next = LimitAlerts.evaluate(
+            snapshot: over,
+            enabled: [.claude],
+            alreadyNotified: ["claude.fiveHour.75"],
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(next.crossings.map(\.key), ["claude.fiveHour.90"])
+        XCTAssertEqual(next.active, ["claude.fiveHour.75", "claude.fiveHour.90"])
+    }
+
+    func testFallingBetweenTheLinesRearmsOnly90() {
+        let between = snapshot(claude: 0.80, status: .ok)
+        let dropped = LimitAlerts.evaluate(
+            snapshot: between,
+            enabled: [.claude],
+            alreadyNotified: ["claude.fiveHour.75", "claude.fiveHour.90"],
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(dropped.crossings.map(\.key), [])
+        XCTAssertEqual(dropped.active, ["claude.fiveHour.75"])
+
+        let again = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.95, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: dropped.active,
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(again.crossings.map(\.key), ["claude.fiveHour.90"])
+    }
+
+    func testFallingBelow75RearmsThatLine() {
+        let under = snapshot(claude: 0.10, status: .ok)
+        let cleared = LimitAlerts.evaluate(
+            snapshot: under,
+            enabled: [.claude],
+            alreadyNotified: ["claude.fiveHour.75", "claude.fiveHour.90"],
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
         XCTAssertTrue(cleared.active.isEmpty)
 
-        let over = snapshot(claude: 0.91, status: .ok)
-        let next = LimitAlerts.evaluate(snapshot: over, enabled: [.claude], alreadyNotified: cleared.active)
-        XCTAssertEqual(next.crossings.map(\.percentText), ["91%"])
+        let next = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.80, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: cleared.active,
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(next.crossings.map(\.key), ["claude.fiveHour.75"])
+    }
+
+    func testATurnedOffLineStaysTrackedWithoutNotifying() {
+        let over = snapshot(claude: 0.95, status: .ok)
+        let quiet = LimitAlerts.evaluate(
+            snapshot: over, enabled: [.claude], alreadyNotified: [], notifyLevels: [LimitAlerts.red], notifyKinds: fiveHour
+        )
+        XCTAssertEqual(quiet.crossings.map(\.key), ["claude.fiveHour.90"])
+        XCTAssertEqual(quiet.active, ["claude.fiveHour.75", "claude.fiveHour.90"])
+
+        let enabled = LimitAlerts.evaluate(
+            snapshot: over, enabled: [.claude], alreadyNotified: quiet.active, notifyLevels: both, notifyKinds: fiveHour
+        )
+        XCTAssertTrue(enabled.crossings.isEmpty)
+    }
+
+    func testATurnedOffWindowStaysTrackedWithoutNotifying() {
+        let over = snapshot(claude: 0.95, status: .ok)
+        let quiet = LimitAlerts.evaluate(
+            snapshot: over, enabled: [.claude], alreadyNotified: [], notifyLevels: both, notifyKinds: []
+        )
+        XCTAssertTrue(quiet.crossings.isEmpty)
+        XCTAssertEqual(quiet.active, ["claude.fiveHour.75", "claude.fiveHour.90"])
     }
 
     func testSkipsStaleDisabledAndNonQuotaWindows() {
@@ -37,28 +131,47 @@ final class LimitAlertsTests: XCTestCase {
                 ]),
             ]
         )
-        let result = LimitAlerts.evaluate(snapshot: snapshot, enabled: [.claude], alreadyNotified: [])
-        XCTAssertTrue(result.crossings.isEmpty)
+        let hidden = LimitAlerts.evaluate(
+            snapshot: snapshot, enabled: [.claude], alreadyNotified: [], notifyLevels: both, notifyKinds: fiveHour
+        )
+        XCTAssertTrue(hidden.crossings.isEmpty)
 
-        let codex = LimitAlerts.evaluate(snapshot: snapshot, enabled: [.codex], alreadyNotified: [])
-        XCTAssertEqual(codex.crossings.map(\.key), ["codex.fiveHour"])
+        let codex = LimitAlerts.evaluate(
+            snapshot: snapshot, enabled: [.codex], alreadyNotified: [], notifyLevels: both, notifyKinds: fiveHour
+        )
+        XCTAssertEqual(codex.crossings.map(\.key), ["codex.fiveHour.75", "codex.fiveHour.90"])
     }
 
     func testDoesNotRepeatAfterAStaleReadingWhileStillOver() {
-        let stale = LimitAlerts.evaluate(snapshot: snapshot(claude: 0.95, status: .stale), enabled: [.claude], alreadyNotified: ["claude.fiveHour"])
-        XCTAssertEqual(stale.active, ["claude.fiveHour"])
+        let latched: Set<String> = ["claude.fiveHour.75", "claude.fiveHour.90"]
+        let stale = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.95, status: .stale),
+            enabled: [.claude],
+            alreadyNotified: latched,
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(stale.active, latched)
 
-        let back = LimitAlerts.evaluate(snapshot: snapshot(claude: 0.95, status: .ok), enabled: [.claude], alreadyNotified: stale.active)
+        let back = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.95, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: stale.active,
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
         XCTAssertTrue(back.crossings.isEmpty)
     }
 
-    func testDoesNotRepeatAfterTheServiceIsReenabledWhileStillOver() {
-        let over = snapshot(claude: 0.95, status: .ok)
-        let disabled = LimitAlerts.evaluate(snapshot: over, enabled: [], alreadyNotified: ["claude.fiveHour"])
-        XCTAssertEqual(disabled.active, ["claude.fiveHour"])
-
-        let enabled = LimitAlerts.evaluate(snapshot: over, enabled: [.claude], alreadyNotified: disabled.active)
-        XCTAssertTrue(enabled.crossings.isEmpty)
+    func testLegacy90KeyAlsoLatches75() {
+        XCTAssertEqual(
+            LimitAlerts.migrate(["claude.fiveHour"]),
+            ["claude.fiveHour.75", "claude.fiveHour.90"]
+        )
+        XCTAssertEqual(
+            LimitAlerts.migrate(["claude.fiveHour.90"]),
+            ["claude.fiveHour.90"]
+        )
     }
 
     private func snapshot(claude fraction: Double, status: ProviderStatus) -> Snapshot {

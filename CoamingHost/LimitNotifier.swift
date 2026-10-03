@@ -9,16 +9,34 @@ final class LimitNotifier {
 
     init(defaults: UserDefaults = PreferenceStore.defaults()) {
         self.defaults = defaults
-        notified = Set(defaults.stringArray(forKey: PreferenceKey.notifiedLimits) ?? [])
+        let stored = Set(defaults.stringArray(forKey: PreferenceKey.notifiedLimits) ?? [])
+        let migrated = LimitAlerts.migrate(stored)
+        notified = migrated
+        if migrated != stored {
+            defaults.set(Array(migrated), forKey: PreferenceKey.notifiedLimits)
+        }
     }
 
-    func sync(_ snapshot: Snapshot, enabled: Set<ProviderID>, language: AppLanguage, allowed: Bool) {
-        // Not recorded while off, so a limit reached meanwhile notifies when it is turned on.
-        guard allowed else { return }
-        let result = LimitAlerts.evaluate(snapshot: snapshot, enabled: enabled, alreadyNotified: notified)
+    func sync(
+        _ snapshot: Snapshot,
+        enabled: Set<ProviderID>,
+        language: AppLanguage,
+        allowed: Bool,
+        notifyLevels: Set<String>,
+        notifyKinds: Set<WindowKind>
+    ) {
+        // Bands are recorded even while notifications are off, so turning them on does not
+        // report a line usage has already crossed.
+        let result = LimitAlerts.evaluate(
+            snapshot: snapshot,
+            enabled: enabled,
+            alreadyNotified: notified,
+            notifyLevels: allowed ? notifyLevels : [],
+            notifyKinds: notifyKinds
+        )
         notified = result.active
         defaults.set(Array(result.active), forKey: PreferenceKey.notifiedLimits)
-        guard !result.crossings.isEmpty else { return }
+        guard allowed, !result.crossings.isEmpty else { return }
         let crossings = result.crossings
         Task { await self.deliver(crossings, language: language) }
     }
@@ -35,8 +53,8 @@ final class LimitNotifier {
             let content = UNMutableNotificationContent()
             content.title = "Agent Coaming"
             content.body = language.pick(
-                ja: "\(crossing.providerName) の \(crossing.windowName) が \(crossing.percentText) になりました。",
-                en: "\(crossing.providerName) \(crossing.windowName) reached \(crossing.percentText)."
+                ja: "\(crossing.providerName) の \(crossing.windowName) が \(crossing.thresholdText) を超えました。",
+                en: "\(crossing.providerName) \(crossing.windowName) crossed \(crossing.thresholdText)."
             )
             content.sound = .default
             let request = UNNotificationRequest(identifier: crossing.key, content: content, trigger: nil)
