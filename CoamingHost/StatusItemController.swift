@@ -22,6 +22,7 @@ final class StatusItemController: NSObject {
 
     func update(_ snapshot: Snapshot, enabled: Set<ProviderID>) {
         item?.button?.title = MenuBarReading.title(snapshot: snapshot, enabled: enabled)
+        item?.button?.appearsDisabled = MenuBarReading.isDimmed(snapshot: snapshot, enabled: enabled, now: Date())
     }
 
     @objc private func clicked() {
