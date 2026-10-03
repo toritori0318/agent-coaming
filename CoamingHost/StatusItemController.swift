@@ -6,6 +6,7 @@ final class StatusItemController: NSObject {
     var onClick: () -> Void = {}
     private var item: NSStatusItem?
     private var title = "—"
+    private var isDimmed = false
     private var screenObserver: NSObjectProtocol?
     private var reinstallTask: Task<Void, Never>?
 
@@ -30,6 +31,7 @@ final class StatusItemController: NSObject {
             item.button?.action = #selector(clicked)
             item.button?.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
             item.button?.title = title
+            item.button?.appearsDisabled = isDimmed
             self.item = item
         } else if let item {
             reinstallTask?.cancel()
@@ -39,14 +41,10 @@ final class StatusItemController: NSObject {
     }
 
     func update(_ snapshot: Snapshot, enabled: Set<ProviderID>) {
-        let highest = snapshot.providers
-            .filter { enabled.contains($0.id) && $0.status != .notInstalled }
-            .flatMap(\.windows)
-            .filter { $0.kind == .fiveHour }
-            .map(\.usedFraction)
-            .max()
-        title = highest.map(formatUsedPercent) ?? "—"
+        title = MenuBarReading.title(snapshot: snapshot, enabled: enabled)
+        isDimmed = MenuBarReading.isDimmed(snapshot: snapshot, enabled: enabled, now: Date())
         item?.button?.title = title
+        item?.button?.appearsDisabled = isDimmed
     }
 
     /// A status item created while an external display is attached can stay on that menu bar
