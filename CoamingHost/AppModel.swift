@@ -10,6 +10,7 @@ final class AppModel {
     var snapshot = Snapshot.waiting()
     var containerAvailable = true
     var menuBar = false
+    var notifyOnLimit = true
     var overlayVisible = false
     var launchAtLogin = false
     var launchAtLoginNotice: LoginItemNotice?
@@ -25,6 +26,7 @@ final class AppModel {
     private var pendingForce = false
     private let defaults = PreferenceStore.defaults()
     let status = StatusItemController()
+    let limits = LimitNotifier()
     let overlay = UsageOverlayController()
 
     func start() async {
@@ -34,6 +36,9 @@ final class AppModel {
             snapshot = previous
         }
         menuBar = defaults.bool(forKey: PreferenceKey.menuBarVisible)
+        if defaults.object(forKey: PreferenceKey.notifyOnLimit) != nil {
+            notifyOnLimit = defaults.bool(forKey: PreferenceKey.notifyOnLimit)
+        }
         overlayVisible = defaults.bool(forKey: PreferenceKey.overlayVisible)
         launchAtLogin = SMAppService.mainApp.status == .enabled
         if let raw = defaults.string(forKey: PreferenceKey.language), let stored = AppLanguage(rawValue: raw) {
@@ -61,6 +66,15 @@ final class AppModel {
         defaults.set(value, forKey: PreferenceKey.menuBarVisible)
         status.setVisible(value)
         status.update(snapshot, enabled: enabledIDs)
+    }
+
+    func setNotifyOnLimit(_ value: Bool) {
+        notifyOnLimit = value
+        defaults.set(value, forKey: PreferenceKey.notifyOnLimit)
+        if value {
+            limits.requestAuthorization()
+        }
+        limits.sync(snapshot, enabled: enabledIDs, language: language, allowed: value)
     }
 
     func setLanguage(_ value: AppLanguage) {
@@ -129,6 +143,7 @@ final class AppModel {
         }
         snapshot = next
         status.update(snapshot, enabled: enabledIDs)
+        limits.sync(snapshot, enabled: enabledIDs, language: language, allowed: notifyOnLimit)
         scheduleOverlayLayout()
         guard store.fileURL != nil else {
             containerAvailable = false

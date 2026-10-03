@@ -1,13 +1,16 @@
 import AppKit
 import CoreServices
 import SwiftUI
+import UserNotifications
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
     private var window: NSWindow?
+    private let notificationPresenter = NotificationPresenter()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = notificationPresenter
         model.status.onClick = { [weak self] in
             self?.showSettings()
         }
@@ -62,5 +65,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if event.eventID != AEEventID(kAEOpenApplication) { return false }
         guard let descriptor = event.paramDescriptor(forKeyword: AEKeyword(keyAEPropData)) else { return false }
         return descriptor.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
+    }
+}
+
+private final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 }

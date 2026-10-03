@@ -3,6 +3,8 @@ import Foundation
 public enum PreferenceKey {
     public static let suiteName = "io.github.toritori0318.agentcoaming"
     public static let menuBarVisible = "menuBarVisible"
+    public static let notifyOnLimit = "notifyOnLimit"
+    public static let notifiedLimits = "notifiedLimits"
     public static let overlayVisible = "overlayVisible"
     public static let overlayOriginX = "overlayOriginX"
     public static let overlayOriginY = "overlayOriginY"
