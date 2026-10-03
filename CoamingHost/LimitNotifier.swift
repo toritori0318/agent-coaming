@@ -13,10 +13,12 @@ final class LimitNotifier {
     }
 
     func sync(_ snapshot: Snapshot, enabled: Set<ProviderID>, language: AppLanguage, allowed: Bool) {
+        // Not recorded while off, so a limit reached meanwhile notifies when it is turned on.
+        guard allowed else { return }
         let result = LimitAlerts.evaluate(snapshot: snapshot, enabled: enabled, alreadyNotified: notified)
         notified = result.active
         defaults.set(Array(result.active), forKey: PreferenceKey.notifiedLimits)
-        guard allowed, !result.crossings.isEmpty else { return }
+        guard !result.crossings.isEmpty else { return }
         let crossings = result.crossings
         Task { await self.deliver(crossings, language: language) }
     }

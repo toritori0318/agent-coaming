@@ -23,9 +23,13 @@ public enum LimitAlerts {
         alreadyNotified: Set<String>,
         threshold: Double = Constants.usageRedThreshold
     ) -> (crossings: [LimitCrossing], active: Set<String>) {
-        var active: Set<String> = []
+        let checked = snapshot.providers.filter { enabled.contains($0.id) && $0.status == .ok }
+        let checkedIDs = Set(checked.map { $0.id.rawValue })
+        // A stale, disabled, or missing provider says nothing about usage, so its keys are kept
+        // instead of cleared; clearing them would repeat the alert when it comes back still over.
+        var active = alreadyNotified.filter { !checkedIDs.contains(String($0.prefix { $0 != "." })) }
         var crossings: [LimitCrossing] = []
-        for provider in snapshot.providers where enabled.contains(provider.id) && provider.status == .ok {
+        for provider in checked {
             for window in provider.windows where isQuota(window.kind) && window.label != "∞" && window.usedFraction >= threshold {
                 let key = "\(provider.id.rawValue).\(window.kind.rawValue)"
                 active.insert(key)

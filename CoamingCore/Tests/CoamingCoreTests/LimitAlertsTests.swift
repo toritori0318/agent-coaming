@@ -44,6 +44,23 @@ final class LimitAlertsTests: XCTestCase {
         XCTAssertEqual(codex.crossings.map(\.key), ["codex.fiveHour"])
     }
 
+    func testDoesNotRepeatAfterAStaleReadingWhileStillOver() {
+        let stale = LimitAlerts.evaluate(snapshot: snapshot(claude: 0.95, status: .stale), enabled: [.claude], alreadyNotified: ["claude.fiveHour"])
+        XCTAssertEqual(stale.active, ["claude.fiveHour"])
+
+        let back = LimitAlerts.evaluate(snapshot: snapshot(claude: 0.95, status: .ok), enabled: [.claude], alreadyNotified: stale.active)
+        XCTAssertTrue(back.crossings.isEmpty)
+    }
+
+    func testDoesNotRepeatAfterTheServiceIsReenabledWhileStillOver() {
+        let over = snapshot(claude: 0.95, status: .ok)
+        let disabled = LimitAlerts.evaluate(snapshot: over, enabled: [], alreadyNotified: ["claude.fiveHour"])
+        XCTAssertEqual(disabled.active, ["claude.fiveHour"])
+
+        let enabled = LimitAlerts.evaluate(snapshot: over, enabled: [.claude], alreadyNotified: disabled.active)
+        XCTAssertTrue(enabled.crossings.isEmpty)
+    }
+
     private func snapshot(claude fraction: Double, status: ProviderStatus) -> Snapshot {
         Snapshot(
             schemaVersion: Snapshot.currentSchemaVersion,
