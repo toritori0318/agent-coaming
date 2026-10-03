@@ -32,6 +32,7 @@ final class StatusItemController: NSObject {
             item.button?.title = title
             self.item = item
         } else if let item {
+            reinstallTask?.cancel()
             NSStatusBar.system.removeStatusItem(item)
             self.item = nil
         }
@@ -50,6 +51,8 @@ final class StatusItemController: NSObject {
 
     /// A status item created while an external display is attached can stay on that menu bar
     /// after the display is removed. Remove it and create it again on the menu bar that remains.
+    /// Some displays that are switched off keep being added and removed every few seconds
+    /// (FB17969822), and the item then blinks. That is not filtered here because it is specific hardware.
     private func scheduleReinstall() {
         guard item != nil else { return }
         reinstallTask?.cancel()
