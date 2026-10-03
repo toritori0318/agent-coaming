@@ -4,7 +4,7 @@ PROJECT = AgentCoaming.xcodeproj
 SCHEME = CoamingHost
 APP = Agent Coaming.app
 
-.PHONY: generate build test check run install
+.PHONY: generate build test check run install dmg
 
 # COAMING_CURSOR=1 includes the optional Cursor path. The default build leaves it out. See ProviderID.included.
 generate:
@@ -48,3 +48,17 @@ install: build
 	@echo 'To show Claude reset times, add this to ~/.claude/settings.json:'
 	@echo '  "statusLine": {"type": "command", "command": "~/Library/Application\\\\ Support/Agent\\\\ Coaming/claude-statusline.sh"}'
 	@echo 'If you already have a status line: "command": "~/Library/Application\\\\ Support/Agent\\\\ Coaming/claude-statusline.sh <existing command>"'
+
+# Public disk image. Refuses COAMING_CURSOR. The notarization password stays in the login keychain.
+dmg:
+	@if [ -z "$(COAMING_TEAM_ID)" ]; then \
+		echo "COAMING_TEAM_ID is not set."; \
+		echo "Use the paid Apple Developer Program team. A Personal Team cannot notarize."; \
+		echo "Example: COAMING_TEAM_ID=XXXXXXXXXX make dmg"; \
+		exit 1; \
+	fi
+	@if [ -n "$(COAMING_CURSOR)" ]; then \
+		echo "make dmg builds the public disk image and leaves Cursor out. Unset COAMING_CURSOR."; \
+		exit 1; \
+	fi
+	env -u COAMING_CURSOR COAMING_TEAM_ID="$(COAMING_TEAM_ID)" ./scripts/release-dmg.sh

@@ -57,6 +57,9 @@ Cursor is behind `COAMING_CURSOR` because Cursor does not publish a personal usa
 COAMING_TEAM_ID=XXXXXXXXXX make build   # writes Config.xcconfig, then xcodebuild
 make test                           # swift test --package-path CoamingCore
 make check                          # test, then python3 scripts/check.py
+COAMING_TEAM_ID=XXXXXXXXXX make dmg     # notarized Developer ID disk image
 ```
+
+`make dmg` (`scripts/release-dmg.sh`) refuses `COAMING_CURSOR` and scans the exported app with `scripts/check.py --app`. The Team ID comes from the environment and is written only to gitignored `Config.xcconfig` and `build/`. The notarization password is not an argument. It stays in the login keychain profile `coaming-notary` (`COAMING_NOTARY_PROFILE` overrides the name). A Personal Team cannot notarize.
 
 `project.yml` is the XcodeGen source. `DEVELOPMENT_TEAM` is `$(COAMING_TEAM_ID)`. Swift 6, macOS 15, strict concurrency. The host is not sandboxed. The widget extension is sandboxed and has no network client entitlement.

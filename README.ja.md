@@ -12,7 +12,7 @@ macOS のデスクトップウィジェットに、Claude Code と Codex CLI の
 
 - このアプリはログイン情報を読むだけで、書き換え・複製・トークン更新はしません。Codex CLI が自分のログインファイルを更新することはあります
 - このアプリ自身は、既定のビルドでは通信しません。Claude は手元のファイルです。Codex の使用量は、手元の `codex` コマンドが chatgpt.com に問い合わせます
-- 個人利用向け。App Store 配布や公証はしていません
+- 個人利用向け。App Store には出していません。GitHub の Release にある DMG は公証済みです。`make install` はこの Mac 向けの開発用ビルドです
 
 ## 仕組み
 
