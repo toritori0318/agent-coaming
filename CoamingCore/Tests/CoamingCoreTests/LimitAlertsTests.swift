@@ -20,6 +20,26 @@ final class LimitAlertsTests: XCTestCase {
         XCTAssertTrue(again.crossings.isEmpty)
     }
 
+    func testExactThresholdsNotify() {
+        let at75 = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.75, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: [],
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(at75.crossings.map(\.key), ["claude.fiveHour.75"])
+
+        let at90 = LimitAlerts.evaluate(
+            snapshot: snapshot(claude: 0.90, status: .ok),
+            enabled: [.claude],
+            alreadyNotified: at75.active,
+            notifyLevels: both,
+            notifyKinds: fiveHour
+        )
+        XCTAssertEqual(at90.crossings.map(\.key), ["claude.fiveHour.90"])
+    }
+
     func testCrossing90FromBetweenTheLinesNotifiesOnly90() {
         let over = snapshot(claude: 0.91, status: .ok)
         let next = LimitAlerts.evaluate(
