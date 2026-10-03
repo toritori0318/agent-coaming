@@ -12,7 +12,7 @@ A macOS app that shows how much of the Claude Code and Codex CLI limits is used,
 
 - This app reads login material and does not rewrite it, copy it, or refresh tokens. The Codex CLI may update its own login file
 - This app does not open a connection in the default build. Claude usage comes from local files. Codex usage comes from the local `codex` command, which asks chatgpt.com
-- For personal use. Not distributed on the App Store and not notarized
+- For personal use. Not distributed on the App Store. The GitHub release disk image is notarized. `make install` signs a development build for this Mac
 
 ## How it reads usage
 
@@ -51,6 +51,24 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 ```
 
 `XXXXXXXXXX` is the Team ID shown in Xcode → Settings → Accounts. This installs `~/Applications/Agent Coaming.app` and copies the Claude status line script to `~/Library/Application Support/Agent Coaming/claude-statusline.sh`.
+
+### Notarized disk image
+
+`make install` is for this Mac. A Personal Team signature expires and is not notarized. To build the disk image another Mac can open:
+
+```sh
+COAMING_TEAM_ID=XXXXXXXXXX make dmg
+```
+
+`XXXXXXXXXX` here is the paid Apple Developer Program team. Before the first run, store the notarization password in the login keychain. The command prompts for it and does not write it into this repository:
+
+```sh
+xcrun notarytool store-credentials "coaming-notary" \
+  --apple-id "APPLE_ID_EMAIL" \
+  --team-id "XXXXXXXXXX"
+```
+
+The Team ID is passed in the environment. The build writes it only to gitignored `Config.xcconfig` and `build/`. `make dmg` refuses `COAMING_CURSOR`, checks the finished app for that optional path, and writes `build/AgentCoaming-<version>.dmg`.
 
 ### Claude Code status line (optional, for the CLI only, to show usage and reset times)
 

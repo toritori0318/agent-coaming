@@ -54,6 +54,11 @@ def normalized(path: Path) -> str:
 
 
 def main() -> int:
+    if len(sys.argv) == 3 and sys.argv[1] == "--app":
+        return 1 if scan_app(Path(sys.argv[2])) else 0
+    if len(sys.argv) != 1:
+        print("usage: check.py [--app PATH]")
+        return 1
     failed = False
     files = list(source_files())
     texts = {path: normalized(path) for path in files}
@@ -116,6 +121,38 @@ def check_default_build() -> bool:
             if marker in output.stdout:
                 print(f"default build contains {marker} in {path.relative_to(ROOT)}")
                 failed = True
+    return failed
+
+
+def scan_app(app: Path) -> bool:
+    """Fail if a product contains the optional Cursor path. Markers stay in this file."""
+    if not app.is_dir():
+        print(f"app missing: {app}")
+        return True
+    failed = False
+    saw_file = False
+    for path in app.rglob("*"):
+        if not path.is_file() or path.is_symlink():
+            continue
+        saw_file = True
+        try:
+            output = subprocess.run(
+                ["strings", "-a", str(path)],
+                check=False,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+        except OSError as error:
+            print(f"strings failed: {error}")
+            return True
+        for marker in DEFAULT_BUILD_MARKERS:
+            if marker in output.stdout:
+                print(f"app contains {marker} in {path}")
+                failed = True
+    if not saw_file:
+        print(f"app has no files: {app}")
+        return True
     return failed
 
 

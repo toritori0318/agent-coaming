@@ -12,7 +12,7 @@ macOS のデスクトップウィジェットに、Claude Code と Codex CLI の
 
 - このアプリはログイン情報を読むだけで、書き換え・複製・トークン更新はしません。Codex CLI が自分のログインファイルを更新することはあります
 - このアプリ自身は、既定のビルドでは通信しません。Claude は手元のファイルです。Codex の使用量は、手元の `codex` コマンドが chatgpt.com に問い合わせます
-- 個人利用向け。App Store 配布や公証はしていません
+- 個人利用向け。App Store には出していません。GitHub の Release にある DMG は公証済みです。`make install` はこの Mac 向けの開発用ビルドです
 
 ## 仕組み
 
@@ -51,6 +51,24 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 ```
 
 `XXXXXXXXXX` は Xcode → Settings → Accounts に出る Team ID です。`~/Applications/Agent Coaming.app` に置き、Claude 用の statusline スクリプトを `~/Library/Application Support/Agent Coaming/claude-statusline.sh` にコピーします。
+
+### 公証済みの DMG
+
+`make install` はこの Mac 用です。無料の Personal Team の署名は期限があり、公証もできません。別の Mac で開ける DMG は次で作ります。
+
+```sh
+COAMING_TEAM_ID=XXXXXXXXXX make dmg
+```
+
+ここで渡す ID は、有料の Apple Developer Program のチームです。初回だけ、公証用パスワードをログインキーチェーンに預けます。パスワードは入力を求められ、このリポジトリには書きません。
+
+```sh
+xcrun notarytool store-credentials "coaming-notary" \
+  --apple-id "APPLE_ID_EMAIL" \
+  --team-id "XXXXXXXXXX"
+```
+
+Team ID は環境変数で渡します。書き出されるのは git に入らない `Config.xcconfig` と `build/` だけです。`make dmg` は `COAMING_CURSOR` を拒否し、出来たアプリにその任意パスが無いことも確認して、`build/AgentCoaming-<version>.dmg` を作ります。
 
 ### Claude Code の statusline を設定する（任意。CLI のみで使用率とリセット時刻を出したい場合）
 
