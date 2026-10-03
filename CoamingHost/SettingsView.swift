@@ -182,7 +182,7 @@ private struct ProviderSettingsSection: View {
 
     private func detail(_ language: AppLanguage) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-                if id == .claude, model.snapshot.provider(.claude)?.status != .ok {
+                if id == .claude, model.snapshot.provider(.claude)?.needsClaudeResetSetup ?? true {
                     ClaudeResetSetup(language: language)
                 }
 
@@ -216,8 +216,8 @@ private struct ClaudeResetSetup: View {
         GroupBox(language.pick(ja: "Claude Code の statusline", en: "Claude Code status line")) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(language.pick(
-                    ja: "Claude Code から使用率とリセット時刻を受け取る設定です。Claude Desktop を使っていれば、使用率はこれなしで出ます。すでに statusline がある場合は、設定手順(github) を見てください。",
-                    en: "Receives used percents and reset times from Claude Code. With Claude Desktop, percents appear without this. If a status line is already set, see Setup steps (GitHub)."
+                    ja: "Claude Code から使用率とリセット時刻を受け取る設定です。Claude Desktop（Cowork を含む）だけなら、使用率はこれなしで出ます。リセット時刻が必要なときや、Claude Code だけを使うときは、下の設定を使います。すでに statusline がある場合は、設定手順(github) を見てください。",
+                    en: "Receives used percents and reset times from Claude Code. With only Claude Desktop, including Cowork, percents appear without this. Use the setting below when you want reset times, or when you use Claude Code alone. If a status line is already set, see Setup steps (GitHub)."
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -236,28 +236,33 @@ private struct ClaudeResetSetup: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if installed {
-                    Text(language.pick(
-                        ja: "Claude Code の settings.json に、次を追加してください。",
-                        en: "Add this to Claude Code's settings.json."
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    Text(snippet)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
-                    Button(language.pick(ja: "設定文をコピー", en: "Copy the setting")) {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(snippet, forType: .string)
-                    }
-                    Text(language.pick(
+                Text(language.pick(
+                    ja: "Claude Code の settings.json に、次を追加してください。",
+                    en: "Add this to Claude Code's settings.json."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                Text(snippet)
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+                Button(language.pick(ja: "設定文をコピー", en: "Copy the setting")) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(snippet, forType: .string)
+                }
+                // Copy waits for the script: a settings.json entry that points at a missing script writes nothing.
+                .disabled(!installed)
+                Text(installed
+                    ? language.pick(
                         ja: "次の更新、または「今すぐ更新」で反映されます。",
                         en: "It appears on the next update, or when you choose Refresh now."
+                    )
+                    : language.pick(
+                        ja: "先にスクリプトを置くと、設定文をコピーできます。",
+                        en: "Install the script first, then copy the setting."
                     ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(4)
