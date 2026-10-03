@@ -11,6 +11,11 @@ final class AppModel {
     var containerAvailable = true
     var menuBar = false
     var notifyOnLimit = true
+    var notifyAt75 = true
+    var notifyAt90 = true
+    var notifyFiveHour = true
+    var notifyWeekly = true
+    var notifyMonth = true
     var overlayVisible = false
     var launchAtLogin = false
     var launchAtLoginNotice: LoginItemNotice?
@@ -36,9 +41,12 @@ final class AppModel {
             snapshot = previous
         }
         menuBar = defaults.bool(forKey: PreferenceKey.menuBarVisible)
-        if defaults.object(forKey: PreferenceKey.notifyOnLimit) != nil {
-            notifyOnLimit = defaults.bool(forKey: PreferenceKey.notifyOnLimit)
-        }
+        notifyOnLimit = storedBool(PreferenceKey.notifyOnLimit, default: true)
+        notifyAt75 = storedBool(PreferenceKey.notifyAt75, default: true)
+        notifyAt90 = storedBool(PreferenceKey.notifyAt90, default: true)
+        notifyFiveHour = storedBool(PreferenceKey.notifyFiveHour, default: true)
+        notifyWeekly = storedBool(PreferenceKey.notifyWeekly, default: true)
+        notifyMonth = storedBool(PreferenceKey.notifyMonth, default: true)
         overlayVisible = defaults.bool(forKey: PreferenceKey.overlayVisible)
         launchAtLogin = SMAppService.mainApp.status == .enabled
         if let raw = defaults.string(forKey: PreferenceKey.language), let stored = AppLanguage(rawValue: raw) {
@@ -74,7 +82,54 @@ final class AppModel {
         if value {
             limits.requestAuthorization()
         }
-        limits.sync(snapshot, enabled: enabledIDs, language: language, allowed: value)
+        syncLimits()
+    }
+
+    func setNotifyAt75(_ value: Bool) {
+        notifyAt75 = value
+        defaults.set(value, forKey: PreferenceKey.notifyAt75)
+    }
+
+    func setNotifyAt90(_ value: Bool) {
+        notifyAt90 = value
+        defaults.set(value, forKey: PreferenceKey.notifyAt90)
+    }
+
+    func setNotifyFiveHour(_ value: Bool) {
+        notifyFiveHour = value
+        defaults.set(value, forKey: PreferenceKey.notifyFiveHour)
+    }
+
+    func setNotifyWeekly(_ value: Bool) {
+        notifyWeekly = value
+        defaults.set(value, forKey: PreferenceKey.notifyWeekly)
+    }
+
+    func setNotifyMonth(_ value: Bool) {
+        notifyMonth = value
+        defaults.set(value, forKey: PreferenceKey.notifyMonth)
+    }
+
+    private func storedBool(_ key: String, default defaultValue: Bool) -> Bool {
+        defaults.object(forKey: key) == nil ? defaultValue : defaults.bool(forKey: key)
+    }
+
+    private func syncLimits() {
+        var levels: Set<String> = []
+        if notifyAt75 { levels.insert(LimitAlerts.orange) }
+        if notifyAt90 { levels.insert(LimitAlerts.red) }
+        var kinds: Set<WindowKind> = []
+        if notifyFiveHour { kinds.insert(.fiveHour) }
+        if notifyWeekly { kinds.insert(.weekly) }
+        if notifyMonth { kinds.insert(.billingPlan) }
+        limits.sync(
+            snapshot,
+            enabled: enabledIDs,
+            language: language,
+            allowed: notifyOnLimit,
+            notifyLevels: levels,
+            notifyKinds: kinds
+        )
     }
 
     func setLanguage(_ value: AppLanguage) {
@@ -143,7 +198,7 @@ final class AppModel {
         }
         snapshot = next
         status.update(snapshot, enabled: enabledIDs)
-        limits.sync(snapshot, enabled: enabledIDs, language: language, allowed: notifyOnLimit)
+        syncLimits()
         scheduleOverlayLayout()
         guard store.fileURL != nil else {
             containerAvailable = false
