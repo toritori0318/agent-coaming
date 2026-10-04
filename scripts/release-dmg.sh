@@ -52,13 +52,22 @@ fi
 
 # Sparkle 2.10 signs the disk image. The private key stays in the login keychain.
 sparkle_version="2.10.0"
+# SHA-256 of Sparkle-2.10.0.tar.xz from the Sparkle GitHub release. Update it with the version.
+sparkle_sha256="c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c"
 sparkle_account="agent-coaming"
 tools="build/sparkle-tools"
 if [[ ! -x "$tools/bin/generate_appcast" || ! -x "$tools/bin/generate_keys" ]]; then
   mkdir -p "$tools"
+  archive="$tools/Sparkle-${sparkle_version}.tar.xz"
   gh release download "$sparkle_version" --repo sparkle-project/Sparkle \
     --pattern "Sparkle-${sparkle_version}.tar.xz" --dir "$tools" --clobber
-  tar -xJf "$tools/Sparkle-${sparkle_version}.tar.xz" -C "$tools" ./bin
+  actual="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
+  if [[ "$actual" != "$sparkle_sha256" ]]; then
+    echo "Sparkle tools archive does not match the expected SHA-256."
+    rm -f "$archive"
+    exit 1
+  fi
+  tar -xJf "$archive" -C "$tools" ./bin
 fi
 if ! "$tools/bin/generate_keys" --account "$sparkle_account" -p >/dev/null; then
   echo "The Sparkle signing key is not in the login keychain."
