@@ -34,6 +34,22 @@ final class ResetClockTests: XCTestCase {
         XCTAssertEqual(formatResetRemaining(now.addingTimeInterval(-1), now: now, locale: ja), "")
     }
 
+    func testAgeWordsUseOneUnit() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let ja = Locale(identifier: "ja_JP")
+        let en = Locale(identifier: "en_US")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-20), now: now, locale: ja), "1分前")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-20), now: now, locale: en), "1 minute ago")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-25 * 60), now: now, locale: ja), "25分前")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-25 * 60), now: now, locale: en), "25 minutes ago")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-20 * 3600 - 5 * 60), now: now, locale: ja), "20時間前")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-20 * 3600 - 5 * 60), now: now, locale: en), "20 hours ago")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-3600), now: now, locale: en), "1 hour ago")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-2 * 86_400 - 3600), now: now, locale: ja), "2日前")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-2 * 86_400 - 3600), now: now, locale: en), "2 days ago")
+        XCTAssertEqual(formatAgeWords(since: now.addingTimeInterval(-86_400), now: now, locale: en), "1 day ago")
+    }
+
     func testLaterDayIncludesMonthAndDay() {
         let now = date(year: 2026, month: 9, day: 27, hour: 15, minute: 24)
         let reset = date(year: 2026, month: 10, day: 3, hour: 9, minute: 5)
