@@ -56,6 +56,26 @@ public func formatResetRemaining(_ date: Date, now: Date, locale: Locale) -> Str
     return days == 1 ? "1 day left" : "\(days) days left"
 }
 
+/// How old a value is, in one unit, as words: 20時間前 / 20 hours ago.
+public func formatAgeWords(since date: Date, now: Date, locale: Locale) -> String {
+    let seconds = max(0, Int(now.timeIntervalSince(date)))
+    let japanese = locale.identifier.hasPrefix("ja")
+    let minutes = seconds / 60
+    if minutes < 60 {
+        let shown = max(minutes, 1)
+        if japanese { return "\(shown)分前" }
+        return shown == 1 ? "1 minute ago" : "\(shown) minutes ago"
+    }
+    let hours = minutes / 60
+    if hours < 24 {
+        if japanese { return "\(hours)時間前" }
+        return hours == 1 ? "1 hour ago" : "\(hours) hours ago"
+    }
+    let days = hours / 24
+    if japanese { return "\(days)日前" }
+    return days == 1 ? "1 day ago" : "\(days) days ago"
+}
+
 public func formatAge(since date: Date, now: Date) -> String {
     let seconds = max(0, Int(now.timeIntervalSince(date)))
     if seconds < 60 { return "\(seconds)s ago" }

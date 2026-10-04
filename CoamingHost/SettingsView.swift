@@ -570,8 +570,16 @@ private struct UsageStatusBars: View {
             return nil
         case .ok, .stale:
             guard let fetched = provider.fetchedAt else { return missingFetchLabel }
-            let clock = formatResetClock(fetched, now: Date(), locale: locale)
-            return language.pick(ja: "\(clock) 時点の値", en: "as of \(clock)")
+            let age = formatAgeWords(since: fetched, now: Date(), locale: locale)
+            // Claude values come from files that Claude Desktop and Claude Code write only while in use.
+            // An old ok value means neither was used since, not that this app stopped.
+            if provider.id == .claude, provider.status == .ok {
+                return language.pick(
+                    ja: "Claude を使っていないため、\(age)の値です。",
+                    en: "Value from \(age). Claude was not in use."
+                )
+            }
+            return language.pick(ja: "\(age)の値です。", en: "Value from \(age).")
         case .needsLogin:
             return language.pick(ja: "再ログインが必要", en: "Sign in again")
         case .notInstalled:
