@@ -30,13 +30,16 @@ public enum Constants {
     /// Desktop appends plan-usage-history.json about every 15 minutes, roughly 95KB a month. A partial read is not valid JSON.
     public static let desktopHistoryReadByteLimit = 16 * 1_048_576
     public static let appGroupName = "group.agentcoaming"
-    // The default build has no network hosts. cursor.com exists only in a COAMING_CURSOR build. See ProviderID.included.
+    /// Public GitHub release the settings button asks about. The page URL is built from the tag, not taken from the response.
+    public static let releaseRepository = "toritori0318/agent-coaming"
+    public static let releaseAPIURL = URL(string: "https://api.github.com/repos/toritori0318/agent-coaming/releases/latest")!
+    // api.github.com is only for the manual update check. cursor.com exists only in a COAMING_CURSOR build. See ProviderID.included.
     #if COAMING_CURSOR
     public static let cursorKeychainService = "cursor-access-token"
-    public static let allowedHosts: Set<String> = ["cursor.com"]
+    public static let allowedHosts: Set<String> = ["api.github.com", "cursor.com"]
     public static let cursorUsageURL = URL(string: "https://cursor.com/api/usage-summary")!
     #else
-    public static let allowedHosts: Set<String> = []
+    public static let allowedHosts: Set<String> = ["api.github.com"]
     #endif
     /// Lower index is kept. When medium exceeds `mediumMaxRows`, drop from the end.
     /// weeklyModel rows below `weeklyModelMinFraction` are removed before consulting this list.

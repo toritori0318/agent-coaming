@@ -21,6 +21,7 @@ final class AppModel {
     var launchAtLoginNotice: LoginItemNotice?
     var refreshing = false
     var refreshSkipped = false
+    var updateNotice: UpdateNotice = .idle
     var language: AppLanguage = .ja
     var enabled: [ProviderID: Bool] = Dictionary(uniqueKeysWithValues: ProviderID.included.map { ($0, true) })
 
@@ -176,6 +177,22 @@ final class AppModel {
         }
     }
 
+    func checkForUpdate() async {
+        guard updateNotice != .checking else { return }
+        updateNotice = .checking
+        let local = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? Constants.appVersion
+        do {
+            let release = try await ReleaseChecker.latest(userAgent: "AgentCoaming/\(local) (macOS)")
+            if UpdateCheck.isNewer(release.version, than: local) {
+                updateNotice = .available(version: release.version, page: release.pageURL)
+            } else {
+                updateNotice = .upToDate
+            }
+        } catch {
+            updateNotice = .failed
+        }
+    }
+
     func refresh(force: Bool) async {
         if refreshing {
             pendingForce = pendingForce || force
@@ -251,4 +268,12 @@ final class AppModel {
 enum LoginItemNotice {
     case needsApproval
     case placeInApplications
+}
+
+enum UpdateNotice: Equatable {
+    case idle
+    case checking
+    case upToDate
+    case available(version: String, page: URL)
+    case failed
 }

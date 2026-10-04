@@ -22,7 +22,7 @@ Code, comments, CLI output, `README.md`, and this file are English. Settings cop
 
 `scripts/check.py` fails the build if these are violated. Do not weaken the check to make a change pass.
 
-- This app's default build has no network hosts (`Constants.allowedHosts` is empty). Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app.
+- This app's default build allows one host, `api.github.com`, and only the settings button Check for updates calls it. Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app. The release page is built from the tag. Do not open a URL taken from the response.
 - Cursor is compiled only when `COAMING_CURSOR=1`. See `ProviderID.included`. That path may read `state.vscdb` or the Keychain and call `cursor.com`. Do not enable it in the default build. `make check` builds the package without that flag and fails if the product contains `cursor.com`, `usage-summary`, or `state.vscdb`.
 - These substrings are forbidden in implementation files (fixtures, `internal/`, and `check.py` itself are skipped): `oauth/token`, `oauth/usage`, `api.anthropic.com`, `api2.cursor.sh`, `auth.openai.com`, `platform.claude.com`, `console.anthropic.com`, `chatgpt.com/backend-api`, `wham/usage`, `SQLITE_OPEN_READWRITE`, `SQLITE_OPEN_CREATE`, `sqlite3_exec`, `SecItemAdd`, `SecItemUpdate`, `SecItemDelete`.
 - The check collapses `"a" + "b"` and adjacent string literals, so splitting a forbidden word does not hide it.

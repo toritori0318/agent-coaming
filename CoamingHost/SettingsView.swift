@@ -140,6 +140,21 @@ struct SettingsView: View {
                     .padding(4)
                 }
 
+                GroupBox(label: Text(language.pick(ja: "バージョン", en: "Version")).font(.headline)) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Agent Coaming \(currentVersion)")
+                        HStack(spacing: 12) {
+                            Button(language.pick(ja: "最新版を確認", en: "Check for updates")) {
+                                Task { await model.checkForUpdate() }
+                            }
+                            .disabled(model.updateNotice == .checking)
+                            updateResult(language)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(4)
+                }
+
                 UsageGuide(language: language)
             }
             .padding(20)
@@ -165,6 +180,38 @@ struct SettingsView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(.bar)
+    }
+
+    private var currentVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? Constants.appVersion
+    }
+
+    @ViewBuilder
+    private func updateResult(_ language: AppLanguage) -> some View {
+        switch model.updateNotice {
+        case .idle:
+            EmptyView()
+        case .checking:
+            Text(language.pick(ja: "確認中", en: "Checking"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .upToDate:
+            Text(language.pick(ja: "最新です", en: "This is the latest"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .available(let version, let page):
+            HStack(spacing: 8) {
+                Text(language.pick(ja: "\(version) があります", en: "\(version) is available"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Link(language.pick(ja: "Release を開く", en: "Open the release"), destination: page)
+                    .font(.caption)
+            }
+        case .failed:
+            Text(language.pick(ja: "確認できませんでした", en: "Could not check"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func notifyOption(_ title: String, get: @escaping () -> Bool, set: @escaping (Bool) -> Void) -> some View {
@@ -472,13 +519,13 @@ private struct UsageGuide: View {
     private var networkText: String {
         #if COAMING_CURSOR
         language.pick(
-            ja: "このアプリが直接通信するのは cursor.com（Cursor の使用量）だけです。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。",
-            en: "The only host this app calls is cursor.com, for Cursor usage. The codex CLI asks chatgpt.com for Codex usage."
+            ja: "「最新版を確認」を押したときだけ api.github.com に問い合わせます。Cursor の使用量は cursor.com です。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。",
+            en: "Check for updates is the only time this app asks api.github.com. Cursor usage uses cursor.com. The codex CLI asks chatgpt.com for Codex usage."
         )
         #else
         language.pick(
-            ja: "このアプリ自身は通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。",
-            en: "This app does not send requests. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file."
+            ja: "「最新版を確認」を押したときだけ api.github.com に問い合わせます。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。",
+            en: "Check for updates is the only time this app sends a request. It asks api.github.com. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file."
         )
         #endif
     }
