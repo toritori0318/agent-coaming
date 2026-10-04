@@ -15,7 +15,7 @@ public enum Constants {
     public static let retryAfterMax: TimeInterval = 60 * 60
     public static let widgetTimelineMax: TimeInterval = 15 * 60
     /// Dim ok values older than this so a stopped host is visible.
-    /// Longer than Claude Desktop's 15-minute write interval (about ±2 minutes in practice).
+    /// Longer than Claude Desktop's 15-minute write interval while in use (about ±2 minutes in practice).
     public static let staleAfter: TimeInterval = 20 * 60
     public static let sqliteBusyTimeoutMillis: Int32 = 250
     public static let appVersion = "1.2.0"

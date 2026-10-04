@@ -266,8 +266,8 @@ private struct ClaudeResetSetup: View {
         GroupBox(language.pick(ja: "Claude Code の statusline", en: "Claude Code status line")) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(language.pick(
-                    ja: "Claude Code から使用率とリセット時刻を受け取る設定です。Claude Desktop（Cowork を含む）だけなら、使用率はこれなしで出ます。リセット時刻が必要なときや、Claude Code だけを使うときは、下の設定を使います。すでに statusline がある場合は、設定手順(github) を見てください。",
-                    en: "Receives used percents and reset times from Claude Code. With only Claude Desktop, including Cowork, percents appear without this. Use the setting below when you want reset times, or when you use Claude Code alone. If a status line is already set, see Setup steps (GitHub)."
+                    ja: "Claude Code から使用率とリセット時刻を受け取る設定です。Claude Desktop（Cowork を含む）で作業している間は、使用率はこれなしで出ます。リセット時刻が必要なときや、Claude Code だけを使うときは、下の設定を使います。すでに statusline がある場合は、設定手順(github) を見てください。",
+                    en: "Receives used percents and reset times from Claude Code. While you work in Claude Desktop, including Cowork, percents appear without this. Use the setting below when you want reset times, or when you use Claude Code alone. If a status line is already set, see Setup steps (GitHub)."
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -380,8 +380,8 @@ private struct UsageGuide: View {
                 block(
                     language.pick(ja: "更新", en: "Updates"),
                     language.pick(
-                        ja: "約 5 分ごとです。取得を断られたサービスは、自動更新が最大 60 分あきます。今すぐ更新は、その間でも前回から 60 秒以上あいていれば通ります。",
-                        en: "About every 5 minutes. If a service refuses the request, automatic updates pause for up to 60 minutes. Refresh now still goes through if at least 60 seconds have passed since the last fetch."
+                        ja: "約 5 分ごとに読み直します。Claude の値は、Claude Desktop で作業している間と、Claude Code が動いている間だけ新しくなります。どちらも使っていない間は、最後の値が薄く残ります。取得を断られたサービスは、自動更新が最大 60 分あきます。今すぐ更新は、その間でも前回から 60 秒以上あいていれば通ります。",
+                        en: "Reads again about every 5 minutes. Claude values change only while you work in Claude Desktop or while Claude Code runs. When neither is in use, the last value stays, dimmed. If a service refuses the request, automatic updates pause for up to 60 minutes. Refresh now still goes through if at least 60 seconds have passed since the last fetch."
                     )
                 )
                 block(language.pick(ja: "棒", en: "Bars"), barsText)
@@ -424,9 +424,9 @@ private struct UsageGuide: View {
             VStack(alignment: .leading, spacing: 10) {
                 readSource("Claude", lines: [
                     "~/Library/Application Support/Claude/plan-usage-history.json",
-                    language.pick(ja: "Claude Desktop が書く使用率", en: "Usage written by Claude Desktop"),
+                    language.pick(ja: "Claude Desktop で作業している間に書かれる使用率", en: "Usage written while you work in Claude Desktop"),
                     "~/Library/Application Support/Agent Coaming/claude-rate-limits.json",
-                    language.pick(ja: "Claude Code の statusline が書く使用率", en: "Usage written by the Claude Code status line"),
+                    language.pick(ja: "Claude Code が動いている間に statusline が書く使用率", en: "Usage written by the status line while Claude Code runs"),
                     language.pick(ja: "新しい方を使います。", en: "Whichever is newer is used."),
                 ])
                 readSource("Codex", lines: [

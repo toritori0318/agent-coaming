@@ -18,7 +18,7 @@ macOS のデスクトップウィジェットに、Claude Code と Codex CLI の
 
 | サービス | 使用量の取り方 |
 |---|---|
-| Claude | 2 つのローカルファイルの新しい方を読む。(1) Claude Desktop が 15 分ごとに書く `plan-usage-history.json`（使用率のみ）、(2) Claude Code が statusline に渡す `rate_limits` を同梱スクリプトが書いたファイル（リセット時刻つき）。OAuth トークンには触らない |
+| Claude | 2 つのローカルファイルの新しい方を読む。(1) Claude Desktop で作業している間、約 15 分ごとに書かれる `plan-usage-history.json`（使用率のみ）、(2) Claude Code のセッション中に、statusline へ渡る `rate_limits` を同梱スクリプトが書くファイル（リセット時刻つき）。OAuth トークンには触らない |
 | Codex CLI | インストール済みの `codex` コマンド（`codex app-server`）に `account/rateLimits/read` を聞く。問い合わせるのは CLI で、CLI が chatgpt.com にアクセスし、自分のログインファイルを更新することがあります。このアプリは `auth.json` を読みません |
 | Cursor | 既定のビルドには入らない。`COAMING_CURSOR=1` で、読み取り専用の `state.vscdb`（または Keychain のトークン）と `cursor.com` への通信をコンパイルする |
 
@@ -26,9 +26,9 @@ Claude の OAuth トークンは Anthropic が Claude Code とネイティブア
 
 Cursor には個人向けの使用量 API がありません。手元のログイン情報を読んで `cursor.com` に問い合わせる形は、自動アクセスを禁じる Cursor の規約にいちばん近いので、既定のビルドからは外しています。`COAMING_CURSOR=1` でその経路をコンパイルできます。入れるかどうかはビルドする人の判断です。上の画像は既定のビルドで、Claude と Codex だけです。
 
-- **Claude Desktop（Cowork 含む）を起動していれば、設定なしで 5 時間 / 7 日の使用率が出ます**（15 分ごとに更新。リセット時刻は出ません）
-- Claude Code だけの場合は、下の statusline を設定すると使用率とリセット時刻が出ます
-- どちらも更新していない間は、「n分前の値」として薄く表示されます
+- **Claude Desktop（Cowork 含む）で作業している間は、設定なしで 5 時間 / 7 日の使用率が出ます**（約 15 分ごとに書かれます。リセット時刻は出ません）
+- Claude Code だけの場合は、下の statusline を設定すると、セッション中に使用率とリセット時刻が出ます
+- このアプリは Claude に使用量を問い合わせません。Claude Desktop は、起動したままでも、作業していない間は書きません。statusline は Claude Code が動いている間だけ書きます。どちらも使っていない間は、最後の値が薄く残り、「Claude を使っていないため、20時間前の値です。」のように出ます
 
 Desktop の `plan-usage-history.json` は公開された形式ではないので、Desktop の更新で読めなくなる可能性があります。その場合は statusline 側だけで動きます。
 
@@ -54,7 +54,7 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 
 ### Claude Code の statusline を設定する（任意。CLI のみで使用率とリセット時刻を出したい場合）
 
-Claude Desktop は、この設定なしで約 15 分ごとに使用率を書きます。リセット時刻は含まれません。
+Claude Desktop は、この設定なしで、作業している間は約 15 分ごとに使用率を書きます。リセット時刻は含まれません。
 
 Claude Code だけで Desktop を使っていない場合は、この設定がないと使用率も出ません。このアプリは Claude に使用量を問い合わせません。
 

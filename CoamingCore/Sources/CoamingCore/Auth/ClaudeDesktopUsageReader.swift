@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads the last sample in `plan-usage-history.json`, which Claude Desktop writes about every 15 minutes.
+/// Reads the last sample in `plan-usage-history.json`, which Claude Desktop writes about every 15 minutes while in use.
 /// The file is unpublished. If the shape changes, return nil and leave it to the status line file.
 /// `fh` is the 5-hour used percent, `sd` is the 7-day used percent. There is no reset time.
 enum ClaudeDesktopUsageReader {
