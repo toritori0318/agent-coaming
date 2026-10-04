@@ -1,5 +1,6 @@
 import AppKit
 import CoreServices
+import Sparkle
 import SwiftUI
 import UserNotifications
 
@@ -8,6 +9,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
     private var window: NSWindow?
     private let notificationPresenter = NotificationPresenter()
+    // Automatic checks stay off. SUEnableAutomaticChecks in Info.plist is false.
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = notificationPresenter
@@ -33,6 +40,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    func checkForUpdates() {
+        NSApp.activate(ignoringOtherApps: true)
+        updaterController.checkForUpdates(nil)
     }
 
     func showSettings() {

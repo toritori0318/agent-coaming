@@ -50,6 +50,23 @@ if [[ "$count" != "1" ]]; then
   exit 1
 fi
 
+# Sparkle 2.10 signs the disk image. The private key stays in the login keychain.
+sparkle_version="2.10.0"
+sparkle_account="agent-coaming"
+tools="build/sparkle-tools"
+if [[ ! -x "$tools/bin/generate_appcast" || ! -x "$tools/bin/generate_keys" ]]; then
+  mkdir -p "$tools"
+  gh release download "$sparkle_version" --repo sparkle-project/Sparkle \
+    --pattern "Sparkle-${sparkle_version}.tar.xz" --dir "$tools" --clobber
+  tar -xJf "$tools/Sparkle-${sparkle_version}.tar.xz" -C "$tools" ./bin
+fi
+if ! "$tools/bin/generate_keys" --account "$sparkle_account" -p >/dev/null; then
+  echo "The Sparkle signing key is not in the login keychain."
+  echo "Create it once. The private key stays in the keychain and must not be committed:"
+  echo "  $tools/bin/generate_keys --account $sparkle_account"
+  exit 1
+fi
+
 env -u COAMING_CURSOR -u COAMING_CURSOR_CONDITION COAMING_TEAM_ID="$team" make generate
 
 env -u COAMING_CURSOR -u COAMING_CURSOR_CONDITION xcodebuild \
@@ -128,4 +145,21 @@ codesign --sign "$identity" --timestamp "$dmg"
 xcrun notarytool submit "$dmg" --keychain-profile "$profile" --wait
 xcrun stapler staple "$dmg"
 spctl --assess --type open --context context:primary-signature -v "$dmg"
+
+public_key="$("$tools/bin/generate_keys" --account "$sparkle_account" -p)"
+app_key="$(defaults read "${PWD}/${app}/Contents/Info" SUPublicEDKey)"
+if [[ "$public_key" != "$app_key" ]]; then
+  echo "SUPublicEDKey does not match the keychain account ${sparkle_account}."
+  exit 1
+fi
+feed="build/sparkle-feed"
+rm -rf "$feed"
+mkdir -p "$feed"
+cp "$dmg" "$feed/"
+"$tools/bin/generate_appcast" \
+  --account "$sparkle_account" \
+  --download-url-prefix "https://github.com/toritori0318/agent-coaming/releases/download/v${version}/" \
+  "$feed"
 echo "Disk image: ${dmg}"
+echo "Appcast: ${feed}/appcast.xml"
+echo "Upload both to the GitHub Release."

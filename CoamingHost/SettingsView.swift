@@ -140,9 +140,35 @@ struct SettingsView: View {
                     .padding(4)
                 }
 
+                versionBox(language)
+
                 UsageGuide(language: language)
             }
             .padding(20)
+        }
+    }
+
+    private func versionBox(_ language: AppLanguage) -> some View {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        return GroupBox(label: Text(language.pick(ja: "バージョン", en: "Version")).font(.headline)) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Agent Coaming \(version)")
+                    Spacer()
+                    Button(language.pick(ja: "最新版を確認", en: "Check for updates")) {
+                        (NSApp.delegate as? AppDelegate)?.checkForUpdates()
+                    }
+                }
+                Text(language.pick(
+                    ja: "新しい版があれば、確認のあと入れ替えます。自動では確認しません。",
+                    en: "If a newer version is available, this replaces the app after you confirm. It does not check on its own."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(4)
         }
     }
 
@@ -472,13 +498,13 @@ private struct UsageGuide: View {
     private var networkText: String {
         #if COAMING_CURSOR
         language.pick(
-            ja: "このアプリが直接通信するのは cursor.com（Cursor の使用量）だけです。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。",
-            en: "The only host this app calls is cursor.com, for Cursor usage. The codex CLI asks chatgpt.com for Codex usage."
+            ja: "使用量では cursor.com に通信します。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。「最新版を確認」を押したときだけ GitHub の Release を見て、新しければ入れ替えます。",
+            en: "This app calls cursor.com for Cursor usage. The codex CLI asks chatgpt.com for Codex usage. Check for updates contacts GitHub only when you press it, then replaces the app."
         )
         #else
         language.pick(
-            ja: "このアプリ自身は通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。",
-            en: "This app does not send requests. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file."
+            ja: "使用量の取得では通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。「最新版を確認」を押したときだけ GitHub の Release を見て、新しければ入れ替えます。",
+            en: "Usage is read locally. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file. Check for updates contacts GitHub only when you press it, then replaces the app."
         )
         #endif
     }

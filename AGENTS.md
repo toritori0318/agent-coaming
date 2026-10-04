@@ -22,7 +22,7 @@ Code, comments, CLI output, `README.md`, and this file are English. Settings cop
 
 `scripts/check.py` fails the build if these are violated. Do not weaken the check to make a change pass.
 
-- This app's default build has no network hosts (`Constants.allowedHosts` is empty). Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app.
+- Usage fetches in the default build have no network hosts (`Constants.allowedHosts` is empty). Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app. The settings button Check for updates uses Sparkle, linked only by the host. Automatic checks are off (`SUEnableAutomaticChecks`). The widget does not link Sparkle and still has no network entitlement.
 - Cursor is compiled only when `COAMING_CURSOR=1`. See `ProviderID.included`. That path may read `state.vscdb` or the Keychain and call `cursor.com`. Do not enable it in the default build. `make check` builds the package without that flag and fails if the product contains `cursor.com`, `usage-summary`, or `state.vscdb`.
 - These substrings are forbidden in implementation files (fixtures, `internal/`, and `check.py` itself are skipped): `oauth/token`, `oauth/usage`, `api.anthropic.com`, `api2.cursor.sh`, `auth.openai.com`, `platform.claude.com`, `console.anthropic.com`, `chatgpt.com/backend-api`, `wham/usage`, `SQLITE_OPEN_READWRITE`, `SQLITE_OPEN_CREATE`, `sqlite3_exec`, `SecItemAdd`, `SecItemUpdate`, `SecItemDelete`.
 - The check collapses `"a" + "b"` and adjacent string literals, so splitting a forbidden word does not hide it.
@@ -61,5 +61,11 @@ COAMING_TEAM_ID=XXXXXXXXXX make dmg     # notarized Developer ID disk image
 ```
 
 `make dmg` (`scripts/release-dmg.sh`) refuses `COAMING_CURSOR` and scans the exported app with `scripts/check.py --app`. The Team ID comes from the environment and is written only to gitignored `Config.xcconfig` and `build/`. The notarization password is not an argument. It stays in the login keychain profile `coaming-notary` (`COAMING_NOTARY_PROFILE` overrides the name). A Personal Team cannot notarize.
+
+The Sparkle feed is `https://github.com/toritori0318/agent-coaming/releases/latest/download/appcast.xml`. The enclosure is that release's notarized disk image. `make dmg` writes `build/sparkle-feed/appcast.xml`. Upload that file and the disk image on the same GitHub Release. Sparkle compares `CFBundleVersion` (`CURRENT_PROJECT_VERSION`), so a release bumps that and `MARKETING_VERSION`.
+
+The EdDSA private key stays in the login keychain under account `agent-coaming`. Do not export it into the repo. The public key is `SUPublicEDKey` in `CoamingHost/Info.plist`. `make dmg` downloads Sparkle's tools into `build/sparkle-tools` and refuses to continue when that keychain item is missing. Create it once with `build/sparkle-tools/bin/generate_keys --account agent-coaming`. Losing the key means the next update needs a new public key and one manual install.
+
+A build without Sparkle cannot update itself. The first release that contains Sparkle is installed from the disk image. Later releases can use the settings button.
 
 `project.yml` is the XcodeGen source. `DEVELOPMENT_TEAM` is `$(COAMING_TEAM_ID)`. Swift 6, macOS 15, strict concurrency. The host is not sandboxed. The widget extension is sandboxed and has no network client entitlement.
