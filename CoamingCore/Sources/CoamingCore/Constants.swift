@@ -18,7 +18,7 @@ public enum Constants {
     /// Longer than Claude Desktop's 15-minute write interval while in use (about ±2 minutes in practice).
     public static let staleAfter: TimeInterval = 20 * 60
     public static let sqliteBusyTimeoutMillis: Int32 = 250
-    public static let appVersion = "1.2.0"
+    public static let appVersion = "1.2.1"
     /// Matches the observed point where Claude Code's weekly warning starts (75%). The official threshold is unpublished and decided server-side.
     public static let usageOrangeThreshold = 0.75
     public static let usageRedThreshold = 0.90
