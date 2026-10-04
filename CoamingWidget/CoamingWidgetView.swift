@@ -101,8 +101,8 @@ private struct MediumUsageView: View {
                             Text(age)
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                                 .foregroundStyle(.secondary)
-                        } else if let resets = row.resetsAt {
-                            Text(resets, style: .relative)
+                        } else if let resets = row.resetsAt, resets > now {
+                            Text(formatResetRemaining(resets, now: now, locale: .current))
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)

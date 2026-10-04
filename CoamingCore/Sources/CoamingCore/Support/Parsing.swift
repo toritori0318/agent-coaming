@@ -35,6 +35,27 @@ public func formatResetClock(_ date: Date, now: Date, locale: Locale, calendar: 
     return formatter.string(from: date)
 }
 
+/// Time left until a limit resets, in one unit: minutes under an hour, hours under a day, otherwise days.
+public func formatResetRemaining(_ date: Date, now: Date, locale: Locale) -> String {
+    let seconds = Int(date.timeIntervalSince(now))
+    guard seconds > 0 else { return "" }
+    let japanese = locale.identifier.hasPrefix("ja")
+    let minutes = seconds / 60
+    if minutes < 60 {
+        let shown = max(minutes, 1)
+        if japanese { return "あと\(shown)分" }
+        return shown == 1 ? "1 min left" : "\(shown) min left"
+    }
+    let hours = minutes / 60
+    if hours < 24 {
+        if japanese { return "あと\(hours)時間" }
+        return hours == 1 ? "1 hour left" : "\(hours) hours left"
+    }
+    let days = hours / 24
+    if japanese { return "あと\(days)日" }
+    return days == 1 ? "1 day left" : "\(days) days left"
+}
+
 public func formatAge(since date: Date, now: Date) -> String {
     let seconds = max(0, Int(now.timeIntervalSince(date)))
     if seconds < 60 { return "\(seconds)s ago" }

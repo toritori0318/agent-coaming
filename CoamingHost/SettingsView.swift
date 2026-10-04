@@ -632,8 +632,7 @@ private struct UsageStatusBars: View {
     }
 
     private func resetText(_ window: UsageWindow?) -> String {
-        guard let resets = window?.resetsAt, resets > Date() else { return "" }
-        let clock = formatResetClock(resets, now: Date(), locale: locale)
-        return language.pick(ja: "\(clock) まで", en: "until \(clock)")
+        guard let resets = window?.resetsAt else { return "" }
+        return formatResetRemaining(resets, now: Date(), locale: locale)
     }
 }
