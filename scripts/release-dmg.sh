@@ -56,7 +56,10 @@ sparkle_version="2.10.0"
 sparkle_sha256="c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c"
 sparkle_account="agent-coaming"
 tools="build/sparkle-tools"
-if [[ ! -x "$tools/bin/generate_appcast" || ! -x "$tools/bin/generate_keys" ]]; then
+# The stamp ties the extracted tools to the version above, so a bump fetches again.
+if [[ "$(cat "$tools/VERSION" 2>/dev/null)" != "$sparkle_version" \
+      || ! -x "$tools/bin/generate_appcast" || ! -x "$tools/bin/generate_keys" ]]; then
+  rm -rf "$tools"
   mkdir -p "$tools"
   archive="$tools/Sparkle-${sparkle_version}.tar.xz"
   gh release download "$sparkle_version" --repo sparkle-project/Sparkle \
@@ -64,15 +67,31 @@ if [[ ! -x "$tools/bin/generate_appcast" || ! -x "$tools/bin/generate_keys" ]]; 
   actual="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
   if [[ "$actual" != "$sparkle_sha256" ]]; then
     echo "Sparkle tools archive does not match the expected SHA-256."
-    rm -f "$archive"
+    rm -rf "$tools"
     exit 1
   fi
   tar -xJf "$archive" -C "$tools" ./bin
+  printf '%s' "$sparkle_version" > "$tools/VERSION"
 fi
-if ! "$tools/bin/generate_keys" --account "$sparkle_account" -p >/dev/null; then
-  echo "The Sparkle signing key is not in the login keychain."
-  echo "Create it once. The private key stays in the keychain and must not be committed:"
-  echo "  $tools/bin/generate_keys --account $sparkle_account"
+
+# The key in Info.plist is what installed apps trust. Check it before spending two notarizations.
+plist_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' CoamingHost/Info.plist 2>/dev/null || true)"
+if [[ -z "$plist_key" ]]; then
+  echo "CoamingHost/Info.plist has no SUPublicEDKey."
+  exit 1
+fi
+public_key="$("$tools/bin/generate_keys" --account "$sparkle_account" -p 2>/dev/null || true)"
+if [[ -z "$public_key" ]]; then
+  echo "The Sparkle signing key for account \"$sparkle_account\" is not in the login keychain."
+  echo "Installed apps trust the public key in CoamingHost/Info.plist, so import the matching private key:"
+  echo "  $tools/bin/generate_keys --account $sparkle_account -f PRIVATE_KEY_FILE"
+  echo "Do not run generate_keys without -f unless you mean to start a new key. A new key means"
+  echo "replacing SUPublicEDKey and shipping that release by disk image."
+  exit 1
+fi
+if [[ "$public_key" != "$plist_key" ]]; then
+  echo "SUPublicEDKey in CoamingHost/Info.plist does not match the keychain account \"$sparkle_account\"."
+  echo "Installed apps would reject updates signed with this key."
   exit 1
 fi
 
@@ -155,12 +174,12 @@ xcrun notarytool submit "$dmg" --keychain-profile "$profile" --wait
 xcrun stapler staple "$dmg"
 spctl --assess --type open --context context:primary-signature -v "$dmg"
 
-public_key="$("$tools/bin/generate_keys" --account "$sparkle_account" -p)"
-app_key="$(defaults read "${PWD}/${app}/Contents/Info" SUPublicEDKey)"
-if [[ "$public_key" != "$app_key" ]]; then
-  echo "SUPublicEDKey does not match the keychain account ${sparkle_account}."
+app_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "${app}/Contents/Info.plist" 2>/dev/null || true)"
+if [[ "$app_key" != "$public_key" ]]; then
+  echo "The exported app carries SUPublicEDKey ${app_key:-missing}, which is not the keychain key."
   exit 1
 fi
+# Only the newest item matters: the app reads releases/latest/download/appcast.xml.
 feed="build/sparkle-feed"
 rm -rf "$feed"
 mkdir -p "$feed"

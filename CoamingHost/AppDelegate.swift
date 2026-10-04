@@ -53,7 +53,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.makeKeyAndOrderFront(nil)
             return
         }
-        let hosting = NSHostingController(rootView: SettingsView(model: model))
+        let view = SettingsView(model: model, checkForUpdates: { [weak self] in
+            self?.checkForUpdates()
+        })
+        let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
         window.title = "Agent Coaming"
         // The visible header is SettingsTitle in the toolbar. This title stays for the Window menu.

@@ -25,9 +25,10 @@ configFiles:
 packages:
   CoamingCore:
     path: CoamingCore
+  # Pinned. scripts/release-dmg.sh downloads the matching command line tools and checks their hash.
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    from: "2.10.0"
+    exactVersion: "2.10.0"
 targets:
   CoamingHost:
     type: application
@@ -57,7 +58,8 @@ targets:
       - target: CoamingWidget
         embed: true
     # Xcode's Embed Frameworks phase looks for a product named Sparkle-product
-    # and then rejects that bundle. Copy the real framework after the link.
+    # and then rejects that bundle. Copy the real framework after the link and
+    # sign its nested code. Xcode signs the app itself after this phase.
     postBuildScripts:
       - name: Embed Sparkle
         basedOnDependencyAnalysis: false
@@ -69,9 +71,12 @@ targets:
           rm -rf "${frameworks}/Sparkle-product" "$dest"
           mkdir -p "$frameworks"
           cp -R "$src" "$dest"
-          identity="${EXPANDED_CODE_SIGN_IDENTITY}"
+          if [[ "${CODE_SIGNING_ALLOWED:-YES}" == "NO" ]]; then
+            exit 0
+          fi
+          identity="${EXPANDED_CODE_SIGN_IDENTITY:-}"
           if [[ -z "$identity" ]]; then
-            echo "No code signing identity."
+            echo "No code signing identity for Sparkle."
             exit 1
           fi
           sign_nested() {
@@ -83,10 +88,6 @@ targets:
           sign_nested "$dest/Versions/B/Updater.app"
           sign_nested "$dest/Versions/B/Autoupdate"
           sign_nested "$dest"
-          /usr/bin/codesign --force --sign "$identity" -o runtime --timestamp=none \
-            --entitlements "${TARGET_TEMP_DIR}/${FULL_PRODUCT_NAME}.xcent" \
-            --generate-entitlement-der \
-            "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}"
   CoamingWidget:
     type: app-extension
     platform: macOS

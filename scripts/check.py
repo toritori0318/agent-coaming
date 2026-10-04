@@ -85,10 +85,36 @@ def main() -> int:
             print(f"refresh token string in {path.relative_to(ROOT)}:{lineno}")
             failed = True
 
+    if check_sparkle_boundaries(files):
+        failed = True
+
     if check_default_build():
         failed = True
 
     return 1 if failed else 0
+
+
+def check_sparkle_boundaries(files) -> bool:
+    """Sparkle is linked by the host only, checks only on the button, and the feed is HTTPS."""
+    failed = False
+    host_plist = (ROOT / "CoamingHost" / "Info.plist").read_text(encoding="utf-8")
+    if not re.search(r"<key>SUEnableAutomaticChecks</key>\s*<false/>", host_plist):
+        print("host Info.plist must set SUEnableAutomaticChecks to false")
+        failed = True
+    feed = re.search(r"<key>SUFeedURL</key>\s*<string>([^<]*)</string>", host_plist)
+    if not feed or not feed.group(1).startswith("https://github.com/"):
+        print("host Info.plist SUFeedURL must be an https://github.com/ URL")
+        failed = True
+    for path in files:
+        if "CoamingWidget" in path.parts and path.suffix == ".swift":
+            if re.search(r"^\s*import Sparkle\b", path.read_text(encoding="utf-8", errors="replace"), re.M):
+                print(f"widget imports Sparkle in {path.relative_to(ROOT)}")
+                failed = True
+    widget_plist = (ROOT / "CoamingWidget" / "Info.plist").read_text(encoding="utf-8")
+    if "SUFeedURL" in widget_plist or "SUPublicEDKey" in widget_plist:
+        print("widget Info.plist must not configure Sparkle")
+        failed = True
+    return failed
 
 
 def check_default_build() -> bool:
@@ -125,16 +151,21 @@ def check_default_build() -> bool:
 
 
 def scan_app(app: Path) -> bool:
-    """Fail if a product contains the optional Cursor path. Markers stay in this file."""
+    """Fail if a product contains the optional Cursor path, or if an extension carries Sparkle.
+    Markers stay in this file."""
     if not app.is_dir():
         print(f"app missing: {app}")
         return True
     failed = False
     saw_file = False
+    plugins = app / "Contents" / "PlugIns"
     for path in app.rglob("*"):
         if not path.is_file() or path.is_symlink():
             continue
         saw_file = True
+        if plugins in path.parents and ("Sparkle" in path.name or "Sparkle.framework" in path.parts):
+            print(f"extension contains Sparkle: {path}")
+            failed = True
         try:
             output = subprocess.run(
                 ["strings", "-a", str(path)],

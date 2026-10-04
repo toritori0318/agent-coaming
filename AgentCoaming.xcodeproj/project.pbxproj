@@ -65,7 +65,7 @@
 		E10E13D1B58B24714BBCAC8B /* CoamingWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingWidgetView.swift; sourceTree = "<group>"; };
 		E32B9A0A632F4EE8D45FA3B1 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		FDE15DCD01CFA096D2113861 /* CoamingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingWidget.swift; sourceTree = "<group>"; };
-		"TEMP_40F4A577-047D-4807-A0C3-4625BCB1FDA1" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,10 +150,10 @@
 			);
 			sourceTree = "<group>";
 		};
-		"TEMP_61D31FCC-EE04-4DAB-A992-00FE3EAE81C8" /* ai-widget */ = {
+		"TEMP_B7709E34-1065-4364-BDC7-540AD23D0893" /* ai-widget */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_40F4A577-047D-4807-A0C3-4625BCB1FDA1" /* Config.xcconfig */,
+				"TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */,
 			);
 			path = "ai-widget";
 			sourceTree = "<group>";
@@ -277,7 +277,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nsrc=\"${BUILT_PRODUCTS_DIR}/Sparkle.framework\"\nframeworks=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\ndest=\"${frameworks}/Sparkle.framework\"\nrm -rf \"${frameworks}/Sparkle-product\" \"$dest\"\nmkdir -p \"$frameworks\"\ncp -R \"$src\" \"$dest\"\nidentity=\"${EXPANDED_CODE_SIGN_IDENTITY}\"\nif [[ -z \"$identity\" ]]; then\n  echo \"No code signing identity.\"\n  exit 1\nfi\nsign_nested() {\n  /usr/bin/codesign --force --sign \"$identity\" -o runtime --timestamp=none \\\n    --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$1\"\n}\nsign_nested \"$dest/Versions/B/XPCServices/Downloader.xpc\"\nsign_nested \"$dest/Versions/B/XPCServices/Installer.xpc\"\nsign_nested \"$dest/Versions/B/Updater.app\"\nsign_nested \"$dest/Versions/B/Autoupdate\"\nsign_nested \"$dest\"\n/usr/bin/codesign --force --sign \"$identity\" -o runtime --timestamp=none \\\n  --entitlements \"${TARGET_TEMP_DIR}/${FULL_PRODUCT_NAME}.xcent\" \\\n  --generate-entitlement-der \\\n  \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}\"\n";
+			shellScript = "set -euo pipefail\nsrc=\"${BUILT_PRODUCTS_DIR}/Sparkle.framework\"\nframeworks=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\ndest=\"${frameworks}/Sparkle.framework\"\nrm -rf \"${frameworks}/Sparkle-product\" \"$dest\"\nmkdir -p \"$frameworks\"\ncp -R \"$src\" \"$dest\"\nif [[ \"${CODE_SIGNING_ALLOWED:-YES}\" == \"NO\" ]]; then\n  exit 0\nfi\nidentity=\"${EXPANDED_CODE_SIGN_IDENTITY:-}\"\nif [[ -z \"$identity\" ]]; then\n  echo \"No code signing identity for Sparkle.\"\n  exit 1\nfi\nsign_nested() {\n  /usr/bin/codesign --force --sign \"$identity\" -o runtime --timestamp=none \\\n    --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$1\"\n}\nsign_nested \"$dest/Versions/B/XPCServices/Downloader.xpc\"\nsign_nested \"$dest/Versions/B/XPCServices/Installer.xpc\"\nsign_nested \"$dest/Versions/B/Updater.app\"\nsign_nested \"$dest/Versions/B/Autoupdate\"\nsign_nested \"$dest\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -319,7 +319,7 @@
 /* Begin XCBuildConfiguration section */
 		0ED4809DE45E557E3D04EB9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_40F4A577-047D-4807-A0C3-4625BCB1FDA1" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -418,7 +418,7 @@
 		};
 		91A15644754EFAF34F4A4A04 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_40F4A577-047D-4807-A0C3-4625BCB1FDA1" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -565,8 +565,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.10.0;
+				kind = exactVersion;
+				version = 2.10.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

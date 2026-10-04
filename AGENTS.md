@@ -23,7 +23,8 @@ Code, comments, CLI output, `README.md`, and this file are English. Settings cop
 
 `scripts/check.py` fails the build if these are violated. Do not weaken the check to make a change pass.
 
-- Usage fetches in the default build have no network hosts (`Constants.allowedHosts` is empty). Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app. The settings button Check for updates uses Sparkle, linked only by the host. Automatic checks are off (`SUEnableAutomaticChecks`). The widget does not link Sparkle and still has no network entitlement.
+- Usage fetches in the default build have no network hosts (`Constants.allowedHosts` is empty). `allowedHosts` governs `HTTPClient` only. Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app.
+- The settings button Check for updates uses Sparkle, which opens its own connection to the GitHub release (github.com and its download hosts). Sparkle is linked by the host only. `SUEnableAutomaticChecks` is false and `SUFeedURL` is an `https://github.com/` URL; `check.py` fails otherwise. The widget does not import Sparkle, its Info.plist has no `SU*` keys, and `check.py --app` fails if an extension contains Sparkle. The widget still has no network entitlement.
 - Cursor is compiled only when `COAMING_CURSOR=1`. See `ProviderID.included`. That path may read `state.vscdb` or the Keychain and call `cursor.com`. Do not enable it in the default build. `make check` builds the package without that flag and fails if the product contains `cursor.com`, `usage-summary`, or `state.vscdb`.
 - These substrings are forbidden in implementation files (fixtures, `internal/`, and `check.py` itself are skipped): `oauth/token`, `oauth/usage`, `api.anthropic.com`, `api2.cursor.sh`, `auth.openai.com`, `platform.claude.com`, `console.anthropic.com`, `chatgpt.com/backend-api`, `wham/usage`, `SQLITE_OPEN_READWRITE`, `SQLITE_OPEN_CREATE`, `sqlite3_exec`, `SecItemAdd`, `SecItemUpdate`, `SecItemDelete`.
 - The check collapses `"a" + "b"` and adjacent string literals, so splitting a forbidden word does not hide it.
@@ -76,13 +77,13 @@ Installed apps update through Sparkle from Settings → Check for updates. A rel
 
 Signing key:
 
-- The EdDSA private key stays in the login keychain under account `agent-coaming`. Do not export it into the repo, into `build/`, into chat, or into an environment variable. `make dmg` downloads Sparkle's tools into `build/sparkle-tools` and stops when that keychain item is missing. Create it once with `build/sparkle-tools/bin/generate_keys --account agent-coaming`.
-- The public key is `SUPublicEDKey` in `CoamingHost/Info.plist`. `make dmg` refuses to continue when it differs from the keychain key. Do not change it without a new key.
-- Losing the key means generating a new pair, replacing `SUPublicEDKey`, and shipping that release by disk image. Installed apps cannot verify an update signed by a different key.
+- The EdDSA private key stays in the login keychain under account `agent-coaming`. Do not export it into the repo, into `build/`, into chat, or into an environment variable. `make dmg` downloads Sparkle's tools into `build/sparkle-tools` and stops before the archive when that keychain item is missing or does not match `SUPublicEDKey` in `CoamingHost/Info.plist`.
+- Installed apps trust the public key already in `Info.plist`. On a new Mac, import the existing private key (`generate_keys --account agent-coaming -f FILE`, from an offline backup). Running `generate_keys` without `-f` makes a new key, which installed apps will reject.
+- Losing the key means generating a new pair, replacing `SUPublicEDKey`, and shipping that release by disk image.
 
 Limits:
 
 - A build without Sparkle (1.2.1 and earlier) cannot update itself. People on those builds install the next release from the disk image. The release notes say so.
 - Automatic checks stay off (`SUEnableAutomaticChecks` false). The app contacts GitHub only when the button is pressed. Do not turn automatic checks on without a settings toggle and updated README copy.
-- Sparkle is linked by the host only. Do not add it to `CoamingWidget`. Keep the Sparkle version pinned in `project.yml` and `Package.resolved`. Bumping it is its own PR, verified by a `make dmg` run that notarization still accepts the nested XPC services.
+- Sparkle is linked by the host only. Do not add it to `CoamingWidget`. The version is pinned in three places that must agree: `exactVersion` in `project.yml`, `Package.resolved`, and `sparkle_version` plus `sparkle_sha256` in `scripts/release-dmg.sh` (the hash is of `Sparkle-<version>.tar.xz` from the Sparkle GitHub release). Bumping it is its own PR, verified by a `make dmg` run that notarization still accepts the nested XPC services.
 - `make dmg` is the only path that produces the appcast. Do not sign an image with `sign_update` by hand and paste the result.

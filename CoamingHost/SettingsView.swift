@@ -3,6 +3,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var model: AppModel
+    /// Runs Sparkle's check. Passed in because NSApp.delegate is not this app's AppDelegate under
+    /// NSApplicationDelegateAdaptor.
+    var checkForUpdates: () -> Void
 
     var body: some View {
         let language = model.language
@@ -155,9 +158,7 @@ struct SettingsView: View {
                 HStack {
                     Text("Agent Coaming \(version)")
                     Spacer()
-                    Button(language.pick(ja: "最新版を確認", en: "Check for updates")) {
-                        (NSApp.delegate as? AppDelegate)?.checkForUpdates()
-                    }
+                    Button(language.pick(ja: "最新版を確認", en: "Check for updates"), action: checkForUpdates)
                 }
                 Text(language.pick(
                     ja: "新しい版があれば、確認のあと入れ替えます。自動では確認しません。",
@@ -498,13 +499,13 @@ private struct UsageGuide: View {
     private var networkText: String {
         #if COAMING_CURSOR
         language.pick(
-            ja: "使用量では cursor.com に通信します。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。「最新版を確認」を押したときだけ GitHub の Release を見て、新しければ入れ替えます。",
-            en: "This app calls cursor.com for Cursor usage. The codex CLI asks chatgpt.com for Codex usage. Check for updates contacts GitHub only when you press it, then replaces the app."
+            ja: "使用量では cursor.com に通信します。Codex の使用量は codex CLI が chatgpt.com に問い合わせます。「最新版を確認」を押したときだけ GitHub の Release を見ます。新しい版があれば、確認のあと入れ替えます。",
+            en: "This app calls cursor.com for Cursor usage. The codex CLI asks chatgpt.com for Codex usage. Check for updates contacts GitHub only when you press it. If a newer version is there, it replaces the app after you confirm."
         )
         #else
         language.pick(
-            ja: "使用量の取得では通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。「最新版を確認」を押したときだけ GitHub の Release を見て、新しければ入れ替えます。",
-            en: "Usage is read locally. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file. Check for updates contacts GitHub only when you press it, then replaces the app."
+            ja: "使用量の取得では通信しません。Codex の使用量は、codex CLI が chatgpt.com に問い合わせます。そのとき CLI が自分のログインファイルを更新することがあります。「最新版を確認」を押したときだけ GitHub の Release を見ます。新しい版があれば、確認のあと入れ替えます。",
+            en: "Usage is read locally. The codex CLI asks chatgpt.com for Codex usage, and may update its own login file. Check for updates contacts GitHub only when you press it. If a newer version is there, it replaces the app after you confirm."
         )
         #endif
     }
