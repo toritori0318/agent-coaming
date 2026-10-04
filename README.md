@@ -18,7 +18,7 @@ A macOS app that shows how much of the Claude Code and Codex CLI limits is used,
 
 | Service | Source |
 |---|---|
-| Claude | The newer of two local files. (1) `plan-usage-history.json`, written by Claude Desktop about every 15 minutes (used percent only). (2) A file written by the bundled script from the `rate_limits` Claude Code passes to its status line (includes reset times). OAuth tokens are not touched |
+| Claude | The newer of two local files. (1) `plan-usage-history.json`, written by Claude Desktop about every 15 minutes while you work in Desktop (used percent only). (2) A file written by the bundled script from the `rate_limits` Claude Code passes to its status line, while a Claude Code session runs (includes reset times). OAuth tokens are not touched |
 | Codex CLI | Asks the installed `codex` command (`codex app-server`) for `account/rateLimits/read`. The CLI asks chatgpt.com and may refresh its own login file. This app does not read `auth.json` |
 | Cursor | Not in the default build. `COAMING_CURSOR=1` compiles in a read-only `state.vscdb` (or the Keychain token) and a call to `cursor.com` |
 
@@ -26,9 +26,9 @@ This app does not use Claude's OAuth token. Anthropic reserves that token for Cl
 
 Cursor does not publish a personal usage API. Reading the local session and polling `cursor.com` sits closest to Cursor's rules against automated access, so the default build leaves Cursor out. `COAMING_CURSOR=1` compiles that path in. Building it is your own decision. The picture above is the default build, with Claude and Codex only.
 
-- **If Claude Desktop (including Cowork) is running, the 5-hour and 7-day percents appear with no extra setup** (updated about every 15 minutes; no reset time)
-- With Claude Code only, the status line below is what makes the percents and the reset times appear
-- While neither is updating, the last value stays on screen, dimmed, as "n ago"
+- **While you work in Claude Desktop (including Cowork), the 5-hour and 7-day percents appear with no extra setup** (written about every 15 minutes; no reset time)
+- With Claude Code only, the status line below is what makes the percents and the reset times appear, while a session runs
+- This app does not ask Claude for usage. Claude Desktop writes only while you work in it, even if it stays open in the background. The status line writes only while Claude Code runs. When neither is in use, the last value stays on screen, dimmed, with a note such as "Value from 20 hours ago. Claude was not in use."
 
 `plan-usage-history.json` is not a published format, so a Desktop update can make it unreadable. The status line path still works on its own.
 
@@ -54,7 +54,7 @@ COAMING_CURSOR=1 COAMING_TEAM_ID=XXXXXXXXXX make install
 
 ### Claude Code status line (optional, for the CLI only, to show usage and reset times)
 
-Claude Desktop writes the used percents about every 15 minutes, without this setting. Those percents have no reset time.
+Claude Desktop writes the used percents about every 15 minutes while you work in it, without this setting. Those percents have no reset time.
 
 With Claude Code and no Claude Desktop, this setting is what makes usage appear. This app does not ask Claude for usage itself.
 

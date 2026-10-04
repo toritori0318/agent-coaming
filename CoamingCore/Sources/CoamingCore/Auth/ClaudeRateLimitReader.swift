@@ -17,7 +17,7 @@ enum ClaudeRead: Sendable {
 struct ClaudeRateLimitReader: Sendable {
     /// File written by the status line script (includes reset times; updates only during a Claude Code session).
     var fileURL: URL
-    /// plan-usage-history.json written by Claude Desktop (percent only, about every 15 minutes while Desktop is running).
+    /// plan-usage-history.json written by Claude Desktop (percent only, about every 15 minutes while the person works in Desktop; not while it idles in the background).
     var desktopFileURL: URL
     var directoryURL: URL
     var desktopDirectoryURL: URL
