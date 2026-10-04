@@ -17,6 +17,7 @@ Code, comments, CLI output, `README.md`, and this file are English. Settings cop
 - `internal/` — private design notes
 - `Config.xcconfig` — personal Team ID, written by `make generate`
 - `build/` and `CoamingCore/.build/` — local paths and a signed Team ID
+- The Sparkle EdDSA private key, in any form. It lives in the login keychain. See Release.
 
 ## Boundaries
 
@@ -62,10 +63,26 @@ COAMING_TEAM_ID=XXXXXXXXXX make dmg     # notarized Developer ID disk image
 
 `make dmg` (`scripts/release-dmg.sh`) refuses `COAMING_CURSOR` and scans the exported app with `scripts/check.py --app`. The Team ID comes from the environment and is written only to gitignored `Config.xcconfig` and `build/`. The notarization password is not an argument. It stays in the login keychain profile `coaming-notary` (`COAMING_NOTARY_PROFILE` overrides the name). A Personal Team cannot notarize.
 
-The Sparkle feed is `https://github.com/toritori0318/agent-coaming/releases/latest/download/appcast.xml`. The enclosure is that release's notarized disk image. `make dmg` writes `build/sparkle-feed/appcast.xml`. Upload that file and the disk image on the same GitHub Release. Sparkle compares `CFBundleVersion` (`CURRENT_PROJECT_VERSION`), so a release bumps that and `MARKETING_VERSION`.
-
-The EdDSA private key stays in the login keychain under account `agent-coaming`. Do not export it into the repo. The public key is `SUPublicEDKey` in `CoamingHost/Info.plist`. `make dmg` downloads Sparkle's tools into `build/sparkle-tools` and refuses to continue when that keychain item is missing. Create it once with `build/sparkle-tools/bin/generate_keys --account agent-coaming`. Losing the key means the next update needs a new public key and one manual install.
-
-A build without Sparkle cannot update itself. The first release that contains Sparkle is installed from the disk image. Later releases can use the settings button.
-
 `project.yml` is the XcodeGen source. `DEVELOPMENT_TEAM` is `$(COAMING_TEAM_ID)`. Swift 6, macOS 15, strict concurrency. The host is not sandboxed. The widget extension is sandboxed and has no network client entitlement.
+
+## Release
+
+Installed apps update through Sparkle from Settings → Check for updates. A release that skips a step below does not reach them, or fails to verify on their Mac. Go through every item.
+
+1. Bump both numbers in `project.yml`: `MARKETING_VERSION` (shown to people) and `CURRENT_PROJECT_VERSION` (`CFBundleVersion`, what Sparkle compares). Sparkle treats a release with the same `CURRENT_PROJECT_VERSION` as not newer. Keep `Constants.appVersion` equal to `MARKETING_VERSION`.
+2. Run `COAMING_TEAM_ID=XXXXXXXXXX make dmg`. It notarizes the app and the disk image, then writes `build/AgentCoaming-<version>.dmg` and `build/sparkle-feed/appcast.xml`. The appcast carries the EdDSA signature of that exact disk image. Do not rebuild the image after the appcast is written. Do not edit the appcast by hand.
+3. Create the GitHub Release with tag `v<version>` and attach both files: the disk image, with its filename unchanged, and `appcast.xml`. The enclosure URL inside the appcast is `releases/download/v<version>/AgentCoaming-<version>.dmg`, so the tag and filename must match. The app reads `releases/latest/download/appcast.xml`, so the release must be marked latest and must not be a draft or pre-release.
+4. Verify after publishing. Download the appcast from the `releases/latest/download` URL and confirm `sparkle:version` equals the new `CURRENT_PROJECT_VERSION` and the enclosure URL returns the file. On a Mac with the previous version installed, press Check for updates.
+
+Signing key:
+
+- The EdDSA private key stays in the login keychain under account `agent-coaming`. Do not export it into the repo, into `build/`, into chat, or into an environment variable. `make dmg` downloads Sparkle's tools into `build/sparkle-tools` and stops when that keychain item is missing. Create it once with `build/sparkle-tools/bin/generate_keys --account agent-coaming`.
+- The public key is `SUPublicEDKey` in `CoamingHost/Info.plist`. `make dmg` refuses to continue when it differs from the keychain key. Do not change it without a new key.
+- Losing the key means generating a new pair, replacing `SUPublicEDKey`, and shipping that release by disk image. Installed apps cannot verify an update signed by a different key.
+
+Limits:
+
+- A build without Sparkle (1.2.1 and earlier) cannot update itself. People on those builds install the next release from the disk image. The release notes say so.
+- Automatic checks stay off (`SUEnableAutomaticChecks` false). The app contacts GitHub only when the button is pressed. Do not turn automatic checks on without a settings toggle and updated README copy.
+- Sparkle is linked by the host only. Do not add it to `CoamingWidget`. Keep the Sparkle version pinned in `project.yml` and `Package.resolved`. Bumping it is its own PR, verified by a `make dmg` run that notarization still accepts the nested XPC services.
+- `make dmg` is the only path that produces the appcast. Do not sign an image with `sign_update` by hand and paste the result.
