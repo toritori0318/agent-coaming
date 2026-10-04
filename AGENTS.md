@@ -17,12 +17,14 @@ Code, comments, CLI output, `README.md`, and this file are English. Settings cop
 - `internal/` — private design notes
 - `Config.xcconfig` — personal Team ID, written by `make generate`
 - `build/` and `CoamingCore/.build/` — local paths and a signed Team ID
+- The Sparkle EdDSA private key, in any form. It lives in the login keychain. See Release.
 
 ## Boundaries
 
 `scripts/check.py` fails the build if these are violated. Do not weaken the check to make a change pass.
 
-- This app's default build has no network hosts (`Constants.allowedHosts` is empty). Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app.
+- Usage fetches in the default build have no network hosts (`Constants.allowedHosts` is empty). `allowedHosts` governs `HTTPClient` only. Claude usage comes from local files. Codex usage comes from the local `codex app-server`, which asks chatgpt.com. Do not call Anthropic or ChatGPT from this app.
+- The settings button Check for updates uses Sparkle, which opens its own connection to the GitHub release (github.com and its download hosts). Sparkle is linked by the host only. `SUEnableAutomaticChecks` is false and `SUFeedURL` is an `https://github.com/` URL; `check.py` fails otherwise. The widget does not import Sparkle, its Info.plist has no `SU*` keys, and `check.py --app` fails if an extension contains Sparkle. The widget still has no network entitlement.
 - Cursor is compiled only when `COAMING_CURSOR=1`. See `ProviderID.included`. That path may read `state.vscdb` or the Keychain and call `cursor.com`. Do not enable it in the default build. `make check` builds the package without that flag and fails if the product contains `cursor.com`, `usage-summary`, or `state.vscdb`.
 - These substrings are forbidden in implementation files (fixtures, `internal/`, and `check.py` itself are skipped): `oauth/token`, `oauth/usage`, `api.anthropic.com`, `api2.cursor.sh`, `auth.openai.com`, `platform.claude.com`, `console.anthropic.com`, `chatgpt.com/backend-api`, `wham/usage`, `SQLITE_OPEN_READWRITE`, `SQLITE_OPEN_CREATE`, `sqlite3_exec`, `SecItemAdd`, `SecItemUpdate`, `SecItemDelete`.
 - The check collapses `"a" + "b"` and adjacent string literals, so splitting a forbidden word does not hide it.
@@ -63,3 +65,25 @@ COAMING_TEAM_ID=XXXXXXXXXX make dmg     # notarized Developer ID disk image
 `make dmg` (`scripts/release-dmg.sh`) refuses `COAMING_CURSOR` and scans the exported app with `scripts/check.py --app`. The Team ID comes from the environment and is written only to gitignored `Config.xcconfig` and `build/`. The notarization password is not an argument. It stays in the login keychain profile `coaming-notary` (`COAMING_NOTARY_PROFILE` overrides the name). A Personal Team cannot notarize.
 
 `project.yml` is the XcodeGen source. `DEVELOPMENT_TEAM` is `$(COAMING_TEAM_ID)`. Swift 6, macOS 15, strict concurrency. The host is not sandboxed. The widget extension is sandboxed and has no network client entitlement.
+
+## Release
+
+Installed apps update through Sparkle from Settings → Check for updates. A release that skips a step below does not reach them, or fails to verify on their Mac. Go through every item.
+
+1. Bump both numbers in `project.yml`: `MARKETING_VERSION` (shown to people) and `CURRENT_PROJECT_VERSION` (`CFBundleVersion`, what Sparkle compares). Sparkle treats a release with the same `CURRENT_PROJECT_VERSION` as not newer. Keep `Constants.appVersion` equal to `MARKETING_VERSION`.
+2. Run `COAMING_TEAM_ID=XXXXXXXXXX make dmg`. It notarizes the app and the disk image, then writes `build/AgentCoaming-<version>.dmg` and `build/sparkle-feed/appcast.xml`. The appcast carries the EdDSA signature of that exact disk image. Do not rebuild the image after the appcast is written. Do not edit the appcast by hand.
+3. Create the GitHub Release with tag `v<version>` and attach both files: the disk image, with its filename unchanged, and `appcast.xml`. The enclosure URL inside the appcast is `releases/download/v<version>/AgentCoaming-<version>.dmg`, so the tag and filename must match. The app reads `releases/latest/download/appcast.xml`, so the release must be marked latest and must not be a draft or pre-release.
+4. Verify after publishing. Download the appcast from the `releases/latest/download` URL and confirm `sparkle:version` equals the new `CURRENT_PROJECT_VERSION` and the enclosure URL returns the file. On a Mac with the previous version installed, press Check for updates.
+
+Signing key:
+
+- The EdDSA private key stays in the login keychain under account `agent-coaming`. Do not export it into the repo, into `build/`, into chat, or into an environment variable. `make dmg` downloads Sparkle's tools into `build/sparkle-tools` and stops before the archive when that keychain item is missing or does not match `SUPublicEDKey` in `CoamingHost/Info.plist`.
+- Installed apps trust the public key already in `Info.plist`. On a new Mac, import the existing private key (`generate_keys --account agent-coaming -f FILE`, from an offline backup). Running `generate_keys` without `-f` makes a new key, which installed apps will reject.
+- Losing the key means generating a new pair, replacing `SUPublicEDKey`, and shipping that release by disk image.
+
+Limits:
+
+- A build without Sparkle (1.2.1 and earlier) cannot update itself. People on those builds install the next release from the disk image. The release notes say so.
+- Automatic checks stay off (`SUEnableAutomaticChecks` false). The app contacts GitHub only when the button is pressed. Do not turn automatic checks on without a settings toggle and updated README copy.
+- Sparkle is linked by the host only. Do not add it to `CoamingWidget`. The version is pinned in three places that must agree: `exactVersion` in `project.yml`, `Package.resolved`, and `sparkle_version` plus `sparkle_sha256` in `scripts/release-dmg.sh` (the hash is of `Sparkle-<version>.tar.xz` from the Sparkle GitHub release). Bumping it is its own PR, verified by a `make dmg` run that notarization still accepts the nested XPC services.
+- `make dmg` is the only path that produces the appcast. Do not sign an image with `sign_update` by hand and paste the result.

@@ -25,6 +25,10 @@ configFiles:
 packages:
   CoamingCore:
     path: CoamingCore
+  # Pinned. scripts/release-dmg.sh downloads the matching command line tools and checks their hash.
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: "2.10.0"
 targets:
   CoamingHost:
     type: application
@@ -49,8 +53,41 @@ targets:
     dependencies:
       - package: CoamingCore
         product: CoamingCore
+      - package: Sparkle
+        product: Sparkle
       - target: CoamingWidget
         embed: true
+    # Xcode's Embed Frameworks phase looks for a product named Sparkle-product
+    # and then rejects that bundle. Copy the real framework after the link and
+    # sign its nested code. Xcode signs the app itself after this phase.
+    postBuildScripts:
+      - name: Embed Sparkle
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          src="${BUILT_PRODUCTS_DIR}/Sparkle.framework"
+          frameworks="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+          dest="${frameworks}/Sparkle.framework"
+          rm -rf "${frameworks}/Sparkle-product" "$dest"
+          mkdir -p "$frameworks"
+          cp -R "$src" "$dest"
+          if [[ "${CODE_SIGNING_ALLOWED:-YES}" == "NO" ]]; then
+            exit 0
+          fi
+          identity="${EXPANDED_CODE_SIGN_IDENTITY:-}"
+          if [[ -z "$identity" ]]; then
+            echo "No code signing identity for Sparkle."
+            exit 1
+          fi
+          sign_nested() {
+            /usr/bin/codesign --force --sign "$identity" -o runtime --timestamp=none \
+              --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der "$1"
+          }
+          sign_nested "$dest/Versions/B/XPCServices/Downloader.xpc"
+          sign_nested "$dest/Versions/B/XPCServices/Installer.xpc"
+          sign_nested "$dest/Versions/B/Updater.app"
+          sign_nested "$dest/Versions/B/Autoupdate"
+          sign_nested "$dest"
   CoamingWidget:
     type: app-extension
     platform: macOS

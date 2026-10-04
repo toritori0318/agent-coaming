@@ -26,6 +26,12 @@
 	<string>15.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/toritori0318/agent-coaming/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>S+lWJVzMw38FF2f8L3x8NlHT9iHk2xajsyL/URyEJOI=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

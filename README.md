@@ -11,7 +11,7 @@ A macOS app that shows how much of the Claude Code and Codex CLI limits is used,
 ![Settings in the default build. Claude and Codex show 5h and 1w. Cursor is not included.](docs/settings.jpg)
 
 - This app reads login material and does not rewrite it, copy it, or refresh tokens. The Codex CLI may update its own login file
-- This app does not open a connection in the default build. Claude usage comes from local files. Codex usage comes from the local `codex` command, which asks chatgpt.com
+- Usage is read locally in the default build. Claude usage comes from local files. Codex usage comes from the local `codex` command, which asks chatgpt.com. Settings → Check for updates contacts GitHub only when you press it, then replaces the app. It does not check in the background
 - For personal use. Not distributed on the App Store. The GitHub release disk image is notarized. `make install` signs a development build for this Mac
 
 ## How it reads usage

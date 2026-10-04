@@ -11,6 +11,7 @@
 		1817E79539E1002A0A3ECA3E /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 071E37C7F38324D1EDFFAE58 /* AppLanguage.swift */; };
 		2690608471DC048841F0A950 /* LimitNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EED873F401CDB60CDFF83B /* LimitNotifier.swift */; };
 		43082287B2769E786AB38892 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942F271320DE2D0C2F6146E8 /* AppDelegate.swift */; };
+		56FD0CC72F047EE331AE773F /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = C2DF50C6D9A175CCFAD98331 /* Sparkle */; };
 		7289488F8E98B7F03E48C0E7 /* CoamingWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6B2DA18855589A67CD8472DB /* CoamingWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		78FF6036E336B30D23E980B3 /* CoamingWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10E13D1B58B24714BBCAC8B /* CoamingWidgetView.swift */; };
 		A34C523390FCD5C91CE94D2D /* claude-statusline.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0B9E1FE1447745F5D2F0B3A2 /* claude-statusline.sh */; };
@@ -64,7 +65,7 @@
 		E10E13D1B58B24714BBCAC8B /* CoamingWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingWidgetView.swift; sourceTree = "<group>"; };
 		E32B9A0A632F4EE8D45FA3B1 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		FDE15DCD01CFA096D2113861 /* CoamingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoamingWidget.swift; sourceTree = "<group>"; };
-		"TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +74,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F86FC92A8A93948F9E1B9A75 /* CoamingCore in Frameworks */,
+				56FD0CC72F047EE331AE773F /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,10 +150,10 @@
 			);
 			sourceTree = "<group>";
 		};
-		"TEMP_4EB51F55-C4C6-4999-81FB-3E15DCDA748F" /* ai-widget */ = {
+		"TEMP_B7709E34-1065-4364-BDC7-540AD23D0893" /* ai-widget */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */,
+				"TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */,
 			);
 			path = "ai-widget";
 			sourceTree = "<group>";
@@ -186,6 +188,7 @@
 				A59C7CA17A1BDB919F30E9C9 /* Resources */,
 				2CF1B1189F9A4CC842147C48 /* Frameworks */,
 				587965E278F86A8AB52B7729 /* Embed Foundation Extensions */,
+				4D23E6ADCD9F55DFF78AB0C8 /* Embed Sparkle */,
 			);
 			buildRules = (
 			);
@@ -195,6 +198,7 @@
 			name = CoamingHost;
 			packageProductDependencies = (
 				F7274D9C5699D9706887AA23 /* CoamingCore */,
+				C2DF50C6D9A175CCFAD98331 /* Sparkle */,
 			);
 			productName = CoamingHost;
 			productReference = 84CB6B57FBB5D2D33E39E385 /* CoamingHost.app */;
@@ -229,6 +233,7 @@
 			mainGroup = F15CAFC359E2FE48A434DF77;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				EDD691614E2563FA6D0E5B49 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				3DAAA39D9DEAF24B38D0A34F /* XCLocalSwiftPackageReference "CoamingCore" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -253,6 +258,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4D23E6ADCD9F55DFF78AB0C8 /* Embed Sparkle */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed Sparkle";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nsrc=\"${BUILT_PRODUCTS_DIR}/Sparkle.framework\"\nframeworks=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\ndest=\"${frameworks}/Sparkle.framework\"\nrm -rf \"${frameworks}/Sparkle-product\" \"$dest\"\nmkdir -p \"$frameworks\"\ncp -R \"$src\" \"$dest\"\nif [[ \"${CODE_SIGNING_ALLOWED:-YES}\" == \"NO\" ]]; then\n  exit 0\nfi\nidentity=\"${EXPANDED_CODE_SIGN_IDENTITY:-}\"\nif [[ -z \"$identity\" ]]; then\n  echo \"No code signing identity for Sparkle.\"\n  exit 1\nfi\nsign_nested() {\n  /usr/bin/codesign --force --sign \"$identity\" -o runtime --timestamp=none \\\n    --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$1\"\n}\nsign_nested \"$dest/Versions/B/XPCServices/Downloader.xpc\"\nsign_nested \"$dest/Versions/B/XPCServices/Installer.xpc\"\nsign_nested \"$dest/Versions/B/Updater.app\"\nsign_nested \"$dest/Versions/B/Autoupdate\"\nsign_nested \"$dest\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		66C85FA28317F412936E6A47 /* Sources */ = {
@@ -292,7 +319,7 @@
 /* Begin XCBuildConfiguration section */
 		0ED4809DE45E557E3D04EB9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -391,7 +418,7 @@
 		};
 		91A15644754EFAF34F4A4A04 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_7E607FFC-5748-461D-8797-3303B83B1CA2" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_FD612C3E-9306-4E26-9326-D90DA6CE5BE4" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -533,10 +560,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		EDD691614E2563FA6D0E5B49 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		B2F031F53D36D7FE363E0CA0 /* CoamingCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CoamingCore;
+		};
+		C2DF50C6D9A175CCFAD98331 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EDD691614E2563FA6D0E5B49 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 		F7274D9C5699D9706887AA23 /* CoamingCore */ = {
 			isa = XCSwiftPackageProductDependency;
