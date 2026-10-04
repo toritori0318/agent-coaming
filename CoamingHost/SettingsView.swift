@@ -61,29 +61,6 @@ struct SettingsView: View {
                             get: { model.menuBar },
                             set: { model.setMenuBar($0) }
                         ))
-                        Toggle(language.pick(ja: "通知", en: "Notify"), isOn: Binding(
-                            get: { model.notifyOnLimit },
-                            set: { model.setNotifyOnLimit($0) }
-                        ))
-                        if model.notifyOnLimit {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 16) {
-                                    notifyOption("75%", get: { model.notifyAt75 }, set: { model.setNotifyAt75($0) })
-                                    notifyOption("90%", get: { model.notifyAt90 }, set: { model.setNotifyAt90($0) })
-                                }
-                                HStack(spacing: 16) {
-                                    notifyOption("5h", get: { model.notifyFiveHour }, set: { model.setNotifyFiveHour($0) })
-                                    notifyOption("1w", get: { model.notifyWeekly }, set: { model.setNotifyWeekly($0) })
-                                    #if COAMING_CURSOR
-                                    notifyOption("1mo", get: { model.notifyMonth }, set: { model.setNotifyMonth($0) })
-                                    #endif
-                                }
-                            }
-                            Text(notifyCaption(language))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
                         if let notice = model.launchAtLoginNotice {
                             Text(noticeText(notice, language: language))
                                 .font(.caption)
@@ -104,6 +81,44 @@ struct SettingsView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(4)
+                }
+
+                GroupBox(label: Text(language.pick(ja: "通知", en: "Notifications")).font(.headline)) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle(language.pick(
+                            ja: "使用率が上限に近づいたら通知する",
+                            en: "Notify when usage nears a limit"
+                        ), isOn: Binding(
+                            get: { model.notifyOnLimit },
+                            set: { model.setNotifyOnLimit($0) }
+                        ))
+                        if model.notifyOnLimit {
+                            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                                GridRow {
+                                    Text(language.pick(ja: "通知する使用率", en: "Notify at"))
+                                        .foregroundStyle(.secondary)
+                                    notifyOption("75%", get: { model.notifyAt75 }, set: { model.setNotifyAt75($0) })
+                                    notifyOption("90%", get: { model.notifyAt90 }, set: { model.setNotifyAt90($0) })
+                                }
+                                GridRow {
+                                    Text(language.pick(ja: "対象の枠", en: "Windows"))
+                                        .foregroundStyle(.secondary)
+                                    notifyOption("5h", get: { model.notifyFiveHour }, set: { model.setNotifyFiveHour($0) })
+                                    notifyOption("1w", get: { model.notifyWeekly }, set: { model.setNotifyWeekly($0) })
+                                    #if COAMING_CURSOR
+                                    notifyOption("1mo", get: { model.notifyMonth }, set: { model.setNotifyMonth($0) })
+                                    #endif
+                                }
+                            }
+                            .padding(.leading, 20)
+                            Text(notifyCaption(language))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,8 +174,8 @@ struct SettingsView: View {
 
     private func notifyCaption(_ language: AppLanguage) -> String {
         language.pick(
-            ja: "下から超えた瞬間に、選んだ線で一度ずつ通知します。下回ったあと再び超えると、もう一度通知します。",
-            en: "Notifies once at each selected line, when usage crosses it from below. After it falls below that line and crosses it again, it notifies once more."
+            ja: "対象の枠が、通知する使用率を下から超えた瞬間に一度だけ通知します。例: Claude の 5h が 75% を超えたとき。下回ってから再び超えると、もう一度通知します。",
+            en: "Notifies once when a selected window crosses a selected line from below. For example, when Claude's 5h passes 75%. After usage falls below that line and crosses it again, it notifies once more."
         )
     }
 
